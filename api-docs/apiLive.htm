@@ -18844,17 +18844,15 @@ GET https://DomainName/api/v1/users/{userId}
 					<h4>Create a User</h4>
 					<p>Adds new application user.</p>
 					<p>
-						<b>Note:</b> Password information is not required (or processed).
-						Password details at present are auto-generated and then sent to
-						the email account given (which is why it can take a few seconds to
-						complete).
+						<b>Note:</b> Password can be either auto-generated or specified during the process of creating an user. The auto generated password would be sent to the given email account (which takes a few seconds to complete).
 					</p>
 					<table class=matrixHeading>
 						<tr class="matrixHeadingBG">
 							<td><div class="mifosXHeading2">Mandatory Fields</div></td>
 						</tr>
 						<tr class=alt>
-							<td>username, firstname, lastname, email, officeId, roles</td>
+							<td>username, firstname, lastname, email, officeId, roles, 
+								<br>sendPasswordToEmail=true OR sendPasswordToEmail=false and password and repeatPassword</td>
 						</tr>
 					</table>
 				</div>
@@ -18872,6 +18870,7 @@ Request body:
     "lastname": "User",
     "email": "whatever@mifos.org",
     "officeId": 1,
+    "sendPasswordToEmail": true,
     "roles": [2,3]
 }
 					</code>
