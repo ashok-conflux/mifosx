@@ -8,11 +8,12 @@ package org.mifosplatform.portfolio.savings.data;
 import static org.mifosplatform.portfolio.savings.SavingsApiConstants.SAVINGS_PRODUCT_REQUEST_DATA_PARAMETERS;
 import static org.mifosplatform.portfolio.savings.SavingsApiConstants.SAVINGS_PRODUCT_RESOURCE_NAME;
 import static org.mifosplatform.portfolio.savings.SavingsApiConstants.allowOverdraftParamName;
-import static org.mifosplatform.portfolio.savings.SavingsApiConstants.feeAmountParamName;
-import static org.mifosplatform.portfolio.savings.SavingsApiConstants.feeOnMonthDayParamName;
 import static org.mifosplatform.portfolio.savings.SavingsApiConstants.currencyCodeParamName;
+import static org.mifosplatform.portfolio.savings.SavingsApiConstants.depositFeeForTransfersParamName;
 import static org.mifosplatform.portfolio.savings.SavingsApiConstants.descriptionParamName;
 import static org.mifosplatform.portfolio.savings.SavingsApiConstants.digitsAfterDecimalParamName;
+import static org.mifosplatform.portfolio.savings.SavingsApiConstants.feeAmountParamName;
+import static org.mifosplatform.portfolio.savings.SavingsApiConstants.feeOnMonthDayParamName;
 import static org.mifosplatform.portfolio.savings.SavingsApiConstants.inMultiplesOfParamName;
 import static org.mifosplatform.portfolio.savings.SavingsApiConstants.interestCalculationDaysInYearTypeParamName;
 import static org.mifosplatform.portfolio.savings.SavingsApiConstants.interestCalculationTypeParamName;
@@ -24,8 +25,8 @@ import static org.mifosplatform.portfolio.savings.SavingsApiConstants.minRequire
 import static org.mifosplatform.portfolio.savings.SavingsApiConstants.nameParamName;
 import static org.mifosplatform.portfolio.savings.SavingsApiConstants.nominalAnnualInterestRateParamName;
 import static org.mifosplatform.portfolio.savings.SavingsApiConstants.overdraftLimitParamName;
-import static org.mifosplatform.portfolio.savings.SavingsApiConstants.withdrawalFeeForTransfersParamName;
 import static org.mifosplatform.portfolio.savings.SavingsApiConstants.shortNameParamName;
+import static org.mifosplatform.portfolio.savings.SavingsApiConstants.withdrawalFeeForTransfersParamName;
 
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
@@ -153,46 +154,18 @@ public class SavingsProductDataValidator {
                         .integerZeroOrGreater();
             }
         }
-
-        /*
-         * if
-         * (this.fromApiJsonHelper.parameterExists(withdrawalFeeAmountParamName,
-         * element)) {
-         * 
-         * final BigDecimal withdrawalFeeAmount =
-         * this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed
-         * (withdrawalFeeAmountParamName, element);
-         * baseDataValidator.reset().parameter
-         * (withdrawalFeeAmountParamName).value
-         * (withdrawalFeeAmount).zeroOrPositiveAmount();
-         * 
-         * if (withdrawalFeeAmount != null) { final Integer withdrawalFeeType =
-         * this.fromApiJsonHelper.extractIntegerSansLocaleNamed(
-         * withdrawalFeeTypeParamName, element);
-         * baseDataValidator.reset().parameter
-         * (withdrawalFeeTypeParamName).value(withdrawalFeeType)
-         * .isOneOfTheseValues(SavingsWithdrawalFeesType.integerValues()); } }
-         * 
-         * if
-         * (this.fromApiJsonHelper.parameterExists(withdrawalFeeTypeParamName,
-         * element)) { final Integer withdrawalFeeType =
-         * this.fromApiJsonHelper.extractIntegerSansLocaleNamed
-         * (withdrawalFeeTypeParamName, element);
-         * baseDataValidator.reset().parameter
-         * (withdrawalFeeTypeParamName).value(withdrawalFeeType).ignoreIfNull()
-         * .isOneOfTheseValues(1, 2);
-         * 
-         * if (withdrawalFeeType != null) { final BigDecimal withdrawalFeeAmount
-         * = this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed(
-         * withdrawalFeeAmountParamName, element);
-         * baseDataValidator.reset().parameter
-         * (withdrawalFeeAmountParamName).value(withdrawalFeeAmount).notNull()
-         * .zeroOrPositiveAmount(); } }
-         */
+        
         if (this.fromApiJsonHelper.parameterExists(withdrawalFeeForTransfersParamName, element)) {
             final Boolean isWithdrawalFeeApplicableForTransfers = this.fromApiJsonHelper.extractBooleanNamed(
                     withdrawalFeeForTransfersParamName, element);
             baseDataValidator.reset().parameter(withdrawalFeeForTransfersParamName).value(isWithdrawalFeeApplicableForTransfers)
+                    .ignoreIfNull().validateForBooleanValue();
+        }
+        
+        if (this.fromApiJsonHelper.parameterExists(depositFeeForTransfersParamName, element)) {
+            final Boolean isDepositFeeApplicableForTransfers = this.fromApiJsonHelper.extractBooleanNamed(
+                    depositFeeForTransfersParamName, element);
+            baseDataValidator.reset().parameter(depositFeeForTransfersParamName).value(isDepositFeeApplicableForTransfers)
                     .ignoreIfNull().validateForBooleanValue();
         }
 
@@ -368,6 +341,13 @@ public class SavingsProductDataValidator {
             final Boolean isWithdrawalFeeApplicableForTransfers = this.fromApiJsonHelper.extractBooleanNamed(
                     withdrawalFeeForTransfersParamName, element);
             baseDataValidator.reset().parameter(withdrawalFeeForTransfersParamName).value(isWithdrawalFeeApplicableForTransfers)
+                    .ignoreIfNull().validateForBooleanValue();
+        }
+        
+        if (this.fromApiJsonHelper.parameterExists(depositFeeForTransfersParamName, element)) {
+            final Boolean isDepositFeeApplicableForTransfers = this.fromApiJsonHelper.extractBooleanNamed(
+                    depositFeeForTransfersParamName, element);
+            baseDataValidator.reset().parameter(depositFeeForTransfersParamName).value(isDepositFeeApplicableForTransfers)
                     .ignoreIfNull().validateForBooleanValue();
         }
 

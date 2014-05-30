@@ -453,12 +453,13 @@ public class SavingsApplicationProcessWritePlatformServiceJpaRepositoryImpl impl
         account.approveAndActivateApplication(savingsAccountDataDTO.getApplicationDate().toDate(), savingsAccountDataDTO.getAppliedBy());
         Money amountForDeposit = account.activateWithBalance();
         boolean isAccountTransfer = false;
+        final boolean applyDepositFee = true;
         if (amountForDeposit.isGreaterThanZero()) {
             // save account entity before performing deposit transaction, as
             // accountId is required for persist transaction entity.
             this.savingAccountRepository.save(account);
             this.savingsAccountDomainService.handleDeposit(account, savingsAccountDataDTO.getFmt(), account.getActivationLocalDate(),
-                    amountForDeposit.getAmount(), null, isAccountTransfer);
+                    amountForDeposit.getAmount(), null, isAccountTransfer, applyDepositFee);
         }
         account.processAccountUponActivation();
         account.validateAccountBalanceDoesNotBecomeNegative(SavingsAccountTransactionType.PAY_CHARGE.name());

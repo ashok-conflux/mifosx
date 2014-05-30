@@ -33,6 +33,7 @@ import org.mifosplatform.portfolio.charge.domain.Charge;
 import org.mifosplatform.portfolio.charge.domain.ChargeCalculationType;
 import org.mifosplatform.portfolio.charge.domain.ChargeRepositoryWrapper;
 import org.mifosplatform.portfolio.charge.domain.ChargeTimeType;
+import org.mifosplatform.portfolio.charge.domain.PaymentTypeCharge;
 import org.mifosplatform.portfolio.charge.exception.ChargeCannotBeAppliedToException;
 import org.mifosplatform.portfolio.charge.exception.SavingsAccountChargeNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -107,9 +108,24 @@ public class SavingsAccountChargeAssembler {
                         }
 
                         final boolean status = true;
-                        final SavingsAccountCharge savingsAccountCharge = SavingsAccountCharge.createNewWithoutSavingsAccount(
-                                chargeDefinition, amount, chargeTime, chargeCalculation, dueDate, status, feeOnMonthDay, feeInterval);
-                        savingsAccountCharges.add(savingsAccountCharge);
+
+                        // If charge is linked with payment type then add
+                        // separate charge for each payment type.
+                        final Set<PaymentTypeCharge> linkedCharges = chargeDefinition.paymentTypeCharges();
+
+                        if (linkedCharges == null || linkedCharges.isEmpty()) {
+
+                            final SavingsAccountCharge savingsAccountCharge = SavingsAccountCharge.createNewWithoutSavingsAccount(
+                                    chargeDefinition, amount, chargeTime, chargeCalculation, dueDate, status, feeOnMonthDay, feeInterval);
+                            savingsAccountCharges.add(savingsAccountCharge);
+                        }else {
+                            for (PaymentTypeCharge paymentTypeCharge : linkedCharges) {
+                                final SavingsAccount account = null;
+                                final SavingsAccountCharge savingsAccountCharge = SavingsAccountCharge.createFromPaymentTypeCharge(account, paymentTypeCharge);
+                                savingsAccountCharges.add(savingsAccountCharge);
+                            }
+                        }
+
                     } else {
                         final Long savingsAccountChargeId = id;
                         final SavingsAccountCharge savingsAccountCharge = this.savingsAccountChargeRepository

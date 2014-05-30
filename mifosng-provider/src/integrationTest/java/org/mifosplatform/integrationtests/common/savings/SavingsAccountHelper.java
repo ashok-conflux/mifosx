@@ -13,7 +13,7 @@ import com.google.gson.Gson;
 import com.jayway.restassured.specification.RequestSpecification;
 import com.jayway.restassured.specification.ResponseSpecification;
 
-@SuppressWarnings({ "rawtypes" })
+@SuppressWarnings("rawtypes")
 public class SavingsAccountHelper {
 
     private final RequestSpecification requestSpec;
@@ -122,10 +122,26 @@ public class SavingsAccountHelper {
                 getSavingsTransactionJSON(amount, date), jsonAttributeToGetback);
     }
 
+    public Object depositToSavingsAccountWithPaymentType(final Integer savingsID, final String amount, String date,
+            final int paymentTypeId, String jsonAttributeToGetback) {
+        System.out
+                .println("--------------------------------- SAVINGS TRANSACTION DEPOSIT WITH PAYMENT TYPE --------------------------------");
+        return performSavingActions(createSavingsTransactionURL(DEPOSIT_SAVINGS_COMMAND, savingsID),
+                getSavingsTransactionWithPaymentTypeJSON(amount, date, paymentTypeId), jsonAttributeToGetback);
+    }
+
     public Object withdrawalFromSavingsAccount(final Integer savingsId, final String amount, String date, String jsonAttributeToGetback) {
         System.out.println("\n--------------------------------- SAVINGS TRANSACTION WITHDRAWAL --------------------------------");
         return performSavingActions(createSavingsTransactionURL(WITHDRAW_SAVINGS_COMMAND, savingsId),
                 getSavingsTransactionJSON(amount, date), jsonAttributeToGetback);
+    }
+
+    public Object withdrawalFromSavingsAccountWithPaymentType(final Integer savingsId, final String amount, String date,
+            final int paymentTypeId, String jsonAttributeToGetback) {
+        System.out
+                .println("\n--------------------------------- SAVINGS TRANSACTION WITHDRAWAL WITH PAYMENT TYPE --------------------------------");
+        return performSavingActions(createSavingsTransactionURL(WITHDRAW_SAVINGS_COMMAND, savingsId),
+                getSavingsTransactionWithPaymentTypeJSON(amount, date, paymentTypeId), jsonAttributeToGetback);
     }
 
     public Integer updateSavingsAccountTransaction(final Integer savingsId, final Integer transactionId, final String amount) {
@@ -222,11 +238,24 @@ public class SavingsAccountHelper {
     }
 
     private String getSavingsTransactionJSON(final String amount, final String transactionDate) {
-        final HashMap<String, String> map = new HashMap<String, String>();
+        final HashMap<String, Object> map = new HashMap<String, Object>();
         map.put("locale", CommonConstants.locale);
         map.put("dateFormat", CommonConstants.dateFormat);
         map.put("transactionDate", transactionDate);
         map.put("transactionAmount", amount);
+        // map.put("paymentTypeId", paymentTypeId);
+        String savingsAccountWithdrawalJson = new Gson().toJson(map);
+        System.out.println(savingsAccountWithdrawalJson);
+        return savingsAccountWithdrawalJson;
+    }
+
+    private String getSavingsTransactionWithPaymentTypeJSON(final String amount, final String transactionDate, final int paymentTypeId) {
+        final HashMap<String, Object> map = new HashMap<String, Object>();
+        map.put("locale", CommonConstants.locale);
+        map.put("dateFormat", CommonConstants.dateFormat);
+        map.put("transactionDate", transactionDate);
+        map.put("transactionAmount", amount);
+        map.put("paymentTypeId", paymentTypeId);
         String savingsAccountWithdrawalJson = new Gson().toJson(map);
         System.out.println(savingsAccountWithdrawalJson);
         return savingsAccountWithdrawalJson;

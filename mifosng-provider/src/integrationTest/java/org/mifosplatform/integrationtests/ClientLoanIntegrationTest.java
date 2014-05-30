@@ -14,6 +14,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.mifosplatform.integrationtests.common.ClientHelper;
+import org.mifosplatform.integrationtests.common.CommonConstants;
 import org.mifosplatform.integrationtests.common.SchedulerJobHelper;
 import org.mifosplatform.integrationtests.common.Utils;
 import org.mifosplatform.integrationtests.common.accounting.Account;
@@ -91,16 +92,20 @@ public class ClientLoanIntegrationTest {
         final Integer loanProductID = createLoanProduct(false, NONE);
 
         List<HashMap> charges = new ArrayList<HashMap>();
-        Integer flatDisbursement = ChargesHelper.createCharges(requestSpec, responseSpec, ChargesHelper.getLoanDisbursementJSON());
+        Integer flatDisbursement = (Integer) ChargesHelper.createCharges(requestSpec, responseSpec,
+                ChargesHelper.getLoanDisbursementJSON(), CommonConstants.RESPONSE_RESOURCE_ID);
 
-        Integer amountPercentage = ChargesHelper.createCharges(requestSpec, responseSpec,
-                ChargesHelper.getLoanDisbursementJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_PERCENTAGE_AMOUNT, "1"));
+        Integer amountPercentage = (Integer) ChargesHelper.createCharges(requestSpec, responseSpec,
+                ChargesHelper.getLoanDisbursementJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_PERCENTAGE_AMOUNT, "1"),
+                CommonConstants.RESPONSE_RESOURCE_ID);
         addCharges(charges, amountPercentage, "1", null);
-        Integer amountPlusInterestPercentage = ChargesHelper.createCharges(requestSpec, responseSpec,
-                ChargesHelper.getLoanDisbursementJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_PERCENTAGE_AMOUNT_AND_INTEREST, "1"));
+        Integer amountPlusInterestPercentage = (Integer) ChargesHelper.createCharges(requestSpec, responseSpec,
+                ChargesHelper.getLoanDisbursementJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_PERCENTAGE_AMOUNT_AND_INTEREST, "1"),
+                CommonConstants.RESPONSE_RESOURCE_ID);
         addCharges(charges, amountPlusInterestPercentage, "1", null);
-        Integer interestPercentage = ChargesHelper.createCharges(requestSpec, responseSpec,
-                ChargesHelper.getLoanDisbursementJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_PERCENTAGE_INTEREST, "1"));
+        Integer interestPercentage = (Integer) ChargesHelper.createCharges(requestSpec, responseSpec,
+                ChargesHelper.getLoanDisbursementJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_PERCENTAGE_INTEREST, "1"),
+                CommonConstants.RESPONSE_RESOURCE_ID);
         addCharges(charges, interestPercentage, "1", null);
 
         final Integer loanID = applyForLoanApplication(clientID, loanProductID, charges, null, "12,000.00");
@@ -198,20 +203,25 @@ public class ClientLoanIntegrationTest {
         final Integer loanProductID = createLoanProduct(false, NONE);
 
         List<HashMap> charges = new ArrayList<HashMap>();
-        Integer flat = ChargesHelper.createCharges(requestSpec, responseSpec,
-                ChargesHelper.getLoanSpecifiedDueDateJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_FLAT, "100", false));
-        Integer flatAccTransfer = ChargesHelper.createCharges(requestSpec, responseSpec,
-                ChargesHelper.getLoanSpecifiedDueDateWithAccountTransferJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_FLAT, "100", false));
+        Integer flat = (Integer) ChargesHelper.createCharges(requestSpec, responseSpec,
+                ChargesHelper.getLoanSpecifiedDueDateJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_FLAT, "100", false),
+                CommonConstants.RESPONSE_RESOURCE_ID);
+        Integer flatAccTransfer = (Integer) ChargesHelper.createCharges(requestSpec, responseSpec,
+                ChargesHelper.getLoanSpecifiedDueDateWithAccountTransferJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_FLAT, "100", false),
+                CommonConstants.RESPONSE_RESOURCE_ID);
 
-        Integer amountPercentage = ChargesHelper.createCharges(requestSpec, responseSpec,
-                ChargesHelper.getLoanSpecifiedDueDateJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_PERCENTAGE_AMOUNT, "1", false));
+        Integer amountPercentage = (Integer) ChargesHelper.createCharges(requestSpec, responseSpec,
+                ChargesHelper.getLoanSpecifiedDueDateJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_PERCENTAGE_AMOUNT, "1", false),
+                CommonConstants.RESPONSE_RESOURCE_ID);
         addCharges(charges, amountPercentage, "1", "29 September 2011");
-        Integer amountPlusInterestPercentage = ChargesHelper
+        Integer amountPlusInterestPercentage = (Integer) ChargesHelper
                 .createCharges(requestSpec, responseSpec, ChargesHelper.getLoanSpecifiedDueDateJSON(
-                        ChargesHelper.CHARGE_CALCULATION_TYPE_PERCENTAGE_AMOUNT_AND_INTEREST, "1", false));
+                        ChargesHelper.CHARGE_CALCULATION_TYPE_PERCENTAGE_AMOUNT_AND_INTEREST, "1", false),
+                        CommonConstants.RESPONSE_RESOURCE_ID);
         addCharges(charges, amountPlusInterestPercentage, "1", "29 September 2011");
-        Integer interestPercentage = ChargesHelper.createCharges(requestSpec, responseSpec,
-                ChargesHelper.getLoanSpecifiedDueDateJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_PERCENTAGE_INTEREST, "1", false));
+        Integer interestPercentage = (Integer) ChargesHelper.createCharges(requestSpec, responseSpec,
+                ChargesHelper.getLoanSpecifiedDueDateJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_PERCENTAGE_INTEREST, "1", false),
+                CommonConstants.RESPONSE_RESOURCE_ID);
         addCharges(charges, interestPercentage, "1", "29 September 2011");
 
         final Integer loanID = applyForLoanApplication(clientID, loanProductID, charges, null, "12,000.00");
@@ -357,19 +367,24 @@ public class ClientLoanIntegrationTest {
         final Integer loanProductID = createLoanProduct(false, NONE);
 
         List<HashMap> charges = new ArrayList<HashMap>();
-        Integer flat = ChargesHelper.createCharges(requestSpec, responseSpec,
-                ChargesHelper.getLoanInstallmentJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_FLAT, "50", false));
-        Integer flatAccTransfer = ChargesHelper.createCharges(requestSpec, responseSpec,
-                ChargesHelper.getLoanInstallmentWithAccountTransferJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_FLAT, "50", false));
+        Integer flat = (Integer) ChargesHelper.createCharges(requestSpec, responseSpec,
+                ChargesHelper.getLoanInstallmentJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_FLAT, "50", false),
+                CommonConstants.RESPONSE_RESOURCE_ID);
+        Integer flatAccTransfer = (Integer) ChargesHelper.createCharges(requestSpec, responseSpec,
+                ChargesHelper.getLoanInstallmentWithAccountTransferJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_FLAT, "50", false),
+                CommonConstants.RESPONSE_RESOURCE_ID);
 
-        Integer amountPercentage = ChargesHelper.createCharges(requestSpec, responseSpec,
-                ChargesHelper.getLoanInstallmentJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_PERCENTAGE_AMOUNT, "1", false));
+        Integer amountPercentage = (Integer) ChargesHelper.createCharges(requestSpec, responseSpec,
+                ChargesHelper.getLoanInstallmentJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_PERCENTAGE_AMOUNT, "1", false),
+                CommonConstants.RESPONSE_RESOURCE_ID);
         addCharges(charges, amountPercentage, "1", "29 September 2011");
-        Integer amountPlusInterestPercentage = ChargesHelper.createCharges(requestSpec, responseSpec,
-                ChargesHelper.getLoanInstallmentJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_PERCENTAGE_AMOUNT_AND_INTEREST, "1", false));
+        Integer amountPlusInterestPercentage = (Integer) ChargesHelper.createCharges(requestSpec, responseSpec,
+                ChargesHelper.getLoanInstallmentJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_PERCENTAGE_AMOUNT_AND_INTEREST, "1", false),
+                CommonConstants.RESPONSE_RESOURCE_ID);
         addCharges(charges, amountPlusInterestPercentage, "1", "29 September 2011");
-        Integer interestPercentage = ChargesHelper.createCharges(requestSpec, responseSpec,
-                ChargesHelper.getLoanInstallmentJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_PERCENTAGE_INTEREST, "1", false));
+        Integer interestPercentage = (Integer) ChargesHelper.createCharges(requestSpec, responseSpec,
+                ChargesHelper.getLoanInstallmentJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_PERCENTAGE_INTEREST, "1", false),
+                CommonConstants.RESPONSE_RESOURCE_ID);
         addCharges(charges, interestPercentage, "1", "29 September 2011");
 
         final Integer loanID = applyForLoanApplication(clientID, loanProductID, charges, null, "12,000.00");
@@ -989,13 +1004,13 @@ public class ClientLoanIntegrationTest {
 
         // Add charges with payment mode regular
         List<HashMap> charges = new ArrayList<HashMap>();
-        Integer flatDisbursement = ChargesHelper.createCharges(requestSpec, responseSpec, ChargesHelper.getLoanDisbursementJSON());
+        Integer flatDisbursement = (Integer) ChargesHelper.createCharges(requestSpec, responseSpec, ChargesHelper.getLoanDisbursementJSON(), CommonConstants.RESPONSE_RESOURCE_ID);
         addCharges(charges, flatDisbursement, "100", null);
-        Integer flatSpecifiedDueDate = ChargesHelper.createCharges(requestSpec, responseSpec,
-                ChargesHelper.getLoanSpecifiedDueDateJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_FLAT, "100", false));
+        Integer flatSpecifiedDueDate = (Integer) ChargesHelper.createCharges(requestSpec, responseSpec,
+                ChargesHelper.getLoanSpecifiedDueDateJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_FLAT, "100", false), CommonConstants.RESPONSE_RESOURCE_ID);
         addCharges(charges, flatSpecifiedDueDate, "100", "29 September 2011");
-        Integer flatInstallmentFee = ChargesHelper.createCharges(requestSpec, responseSpec,
-                ChargesHelper.getLoanInstallmentJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_FLAT, "50", false));
+        Integer flatInstallmentFee = (Integer) ChargesHelper.createCharges(requestSpec, responseSpec,
+                ChargesHelper.getLoanInstallmentJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_FLAT, "50", false), CommonConstants.RESPONSE_RESOURCE_ID);
         addCharges(charges, flatInstallmentFee, "50", null);
 
         final Account assetAccount = this.accountHelper.createAssetAccount();
@@ -1095,8 +1110,8 @@ public class ClientLoanIntegrationTest {
         HashMap thirdInstallment = loanSchedule.get(3);
         validateNumberForEqual("60.59", String.valueOf(thirdInstallment.get("interestOutstanding")));
 
-        Integer flatPenaltySpecifiedDueDate = ChargesHelper.createCharges(requestSpec, responseSpec,
-                ChargesHelper.getLoanSpecifiedDueDateJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_FLAT, "100", true));
+        Integer flatPenaltySpecifiedDueDate = (Integer) ChargesHelper.createCharges(requestSpec, responseSpec,
+                ChargesHelper.getLoanSpecifiedDueDateJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_FLAT, "100", true), CommonConstants.RESPONSE_RESOURCE_ID);
         this.loanTransactionHelper.addChargesForLoan(loanID, LoanTransactionHelper.getSpecifiedDueDateChargesForLoanAsJSON(
                 String.valueOf(flatPenaltySpecifiedDueDate), "29 September 2011", "100"));
         loanCharges.clear();
@@ -1165,16 +1180,16 @@ public class ClientLoanIntegrationTest {
 
         // Add charges with payment mode regular
         List<HashMap> charges = new ArrayList<HashMap>();
-        Integer percentageDisbursementCharge = ChargesHelper.createCharges(requestSpec, responseSpec,
-                ChargesHelper.getLoanDisbursementJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_PERCENTAGE_AMOUNT, "1"));
+        Integer percentageDisbursementCharge = (Integer) ChargesHelper.createCharges(requestSpec, responseSpec,
+                ChargesHelper.getLoanDisbursementJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_PERCENTAGE_AMOUNT, "1"), CommonConstants.RESPONSE_RESOURCE_ID);
         addCharges(charges, percentageDisbursementCharge, "1", null);
 
-        Integer percentageSpecifiedDueDateCharge = ChargesHelper.createCharges(requestSpec, responseSpec,
-                ChargesHelper.getLoanSpecifiedDueDateJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_PERCENTAGE_AMOUNT, "1", false));
+        Integer percentageSpecifiedDueDateCharge = (Integer) ChargesHelper.createCharges(requestSpec, responseSpec,
+                ChargesHelper.getLoanSpecifiedDueDateJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_PERCENTAGE_AMOUNT, "1", false), CommonConstants.RESPONSE_RESOURCE_ID);
         addCharges(charges, percentageSpecifiedDueDateCharge, "1", "29 September 2011");
 
-        Integer percentageInstallmentFee = ChargesHelper.createCharges(requestSpec, responseSpec,
-                ChargesHelper.getLoanInstallmentJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_PERCENTAGE_AMOUNT, "1", false));
+        Integer percentageInstallmentFee = (Integer) ChargesHelper.createCharges(requestSpec, responseSpec,
+                ChargesHelper.getLoanInstallmentJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_PERCENTAGE_AMOUNT, "1", false), CommonConstants.RESPONSE_RESOURCE_ID);
         addCharges(charges, percentageInstallmentFee, "1", "29 September 2011");
 
         final Account assetAccount = this.accountHelper.createAssetAccount();
@@ -1274,8 +1289,8 @@ public class ClientLoanIntegrationTest {
         HashMap thirdInstallment = loanSchedule.get(3);
         validateNumberForEqual("60.59", String.valueOf(thirdInstallment.get("interestOutstanding")));
 
-        Integer percentagePenaltySpecifiedDueDate = ChargesHelper.createCharges(requestSpec, responseSpec,
-                ChargesHelper.getLoanSpecifiedDueDateJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_PERCENTAGE_AMOUNT, "1", true));
+        Integer percentagePenaltySpecifiedDueDate = (Integer) ChargesHelper.createCharges(requestSpec, responseSpec,
+                ChargesHelper.getLoanSpecifiedDueDateJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_PERCENTAGE_AMOUNT, "1", true), CommonConstants.RESPONSE_RESOURCE_ID);
         this.loanTransactionHelper.addChargesForLoan(loanID, LoanTransactionHelper.getSpecifiedDueDateChargesForLoanAsJSON(
                 String.valueOf(percentagePenaltySpecifiedDueDate), "29 September 2011", "1"));
         loanCharges.clear();
@@ -1344,17 +1359,17 @@ public class ClientLoanIntegrationTest {
 
         // Add charges with payment mode regular
         List<HashMap> charges = new ArrayList<HashMap>();
-        Integer amountPlusInterestPercentageDisbursementCharge = ChargesHelper.createCharges(requestSpec, responseSpec,
-                ChargesHelper.getLoanDisbursementJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_PERCENTAGE_AMOUNT_AND_INTEREST, "1"));
+        Integer amountPlusInterestPercentageDisbursementCharge = (Integer) ChargesHelper.createCharges(requestSpec, responseSpec,
+                ChargesHelper.getLoanDisbursementJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_PERCENTAGE_AMOUNT_AND_INTEREST, "1"), CommonConstants.RESPONSE_RESOURCE_ID);
         addCharges(charges, amountPlusInterestPercentageDisbursementCharge, "1", null);
 
-        Integer amountPlusInterestPercentageSpecifiedDueDateCharge = ChargesHelper
+        Integer amountPlusInterestPercentageSpecifiedDueDateCharge = (Integer) ChargesHelper
                 .createCharges(requestSpec, responseSpec, ChargesHelper.getLoanSpecifiedDueDateJSON(
-                        ChargesHelper.CHARGE_CALCULATION_TYPE_PERCENTAGE_AMOUNT_AND_INTEREST, "1", false));
+                        ChargesHelper.CHARGE_CALCULATION_TYPE_PERCENTAGE_AMOUNT_AND_INTEREST, "1", false), CommonConstants.RESPONSE_RESOURCE_ID);
         addCharges(charges, amountPlusInterestPercentageSpecifiedDueDateCharge, "1", "29 September 2011");
 
-        Integer amountPlusInterestPercentageInstallmentFee = ChargesHelper.createCharges(requestSpec, responseSpec,
-                ChargesHelper.getLoanInstallmentJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_PERCENTAGE_AMOUNT_AND_INTEREST, "1", false));
+        Integer amountPlusInterestPercentageInstallmentFee = (Integer) ChargesHelper.createCharges(requestSpec, responseSpec,
+                ChargesHelper.getLoanInstallmentJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_PERCENTAGE_AMOUNT_AND_INTEREST, "1", false), CommonConstants.RESPONSE_RESOURCE_ID);
         addCharges(charges, amountPlusInterestPercentageInstallmentFee, "1", "29 September 2011");
 
         final Account assetAccount = this.accountHelper.createAssetAccount();
@@ -1457,8 +1472,8 @@ public class ClientLoanIntegrationTest {
         HashMap thirdInstallment = loanSchedule.get(3);
         validateNumberForEqual("60.59", String.valueOf(thirdInstallment.get("interestOutstanding")));
 
-        Integer amountPlusInterestPercentagePenaltySpecifiedDueDate = ChargesHelper.createCharges(requestSpec, responseSpec,
-                ChargesHelper.getLoanSpecifiedDueDateJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_PERCENTAGE_AMOUNT, "1", true));
+        Integer amountPlusInterestPercentagePenaltySpecifiedDueDate = (Integer) ChargesHelper.createCharges(requestSpec, responseSpec,
+                ChargesHelper.getLoanSpecifiedDueDateJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_PERCENTAGE_AMOUNT, "1", true), CommonConstants.RESPONSE_RESOURCE_ID);
         this.loanTransactionHelper.addChargesForLoan(
                 loanID,
                 LoanTransactionHelper.getSpecifiedDueDateChargesForLoanAsJSON(
@@ -1531,13 +1546,13 @@ public class ClientLoanIntegrationTest {
 
         // Add charges with payment mode regular
         List<HashMap> charges = new ArrayList<HashMap>();
-        Integer flatDisbursement = ChargesHelper.createCharges(requestSpec, responseSpec, ChargesHelper.getLoanDisbursementJSON());
+        Integer flatDisbursement = (Integer) ChargesHelper.createCharges(requestSpec, responseSpec, ChargesHelper.getLoanDisbursementJSON(), CommonConstants.RESPONSE_RESOURCE_ID);
         addCharges(charges, flatDisbursement, "100", null);
-        Integer flatSpecifiedDueDate = ChargesHelper.createCharges(requestSpec, responseSpec,
-                ChargesHelper.getLoanSpecifiedDueDateJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_FLAT, "100", false));
+        Integer flatSpecifiedDueDate = (Integer) ChargesHelper.createCharges(requestSpec, responseSpec,
+                ChargesHelper.getLoanSpecifiedDueDateJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_FLAT, "100", false), CommonConstants.RESPONSE_RESOURCE_ID);
 
-        Integer flatInstallmentFee = ChargesHelper.createCharges(requestSpec, responseSpec,
-                ChargesHelper.getLoanInstallmentJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_FLAT, "50", false));
+        Integer flatInstallmentFee = (Integer) ChargesHelper.createCharges(requestSpec, responseSpec,
+                ChargesHelper.getLoanInstallmentJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_FLAT, "50", false), CommonConstants.RESPONSE_RESOURCE_ID);
         addCharges(charges, flatInstallmentFee, "50", null);
 
         final Account assetAccount = this.accountHelper.createAssetAccount();
@@ -1662,8 +1677,8 @@ public class ClientLoanIntegrationTest {
         this.journalEntryHelper.checkJournalEntryForExpenseAccount(expenseAccount, "20 December 2011",
                 new JournalEntry(Float.valueOf("61.79"), JournalEntry.TransactionType.DEBIT));
 
-        Integer flatPenaltySpecifiedDueDate = ChargesHelper.createCharges(requestSpec, responseSpec,
-                ChargesHelper.getLoanSpecifiedDueDateJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_FLAT, "100", true));
+        Integer flatPenaltySpecifiedDueDate = (Integer) ChargesHelper.createCharges(requestSpec, responseSpec,
+                ChargesHelper.getLoanSpecifiedDueDateJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_FLAT, "100", true), CommonConstants.RESPONSE_RESOURCE_ID);
         this.loanTransactionHelper.addChargesForLoan(loanID, LoanTransactionHelper.getSpecifiedDueDateChargesForLoanAsJSON(
                 String.valueOf(flatPenaltySpecifiedDueDate), "29 September 2011", "100"));
         loanCharges.clear();
@@ -1729,16 +1744,16 @@ public class ClientLoanIntegrationTest {
 
         // Add charges with payment mode regular
         List<HashMap> charges = new ArrayList<HashMap>();
-        Integer percentageDisbursementCharge = ChargesHelper.createCharges(requestSpec, responseSpec,
-                ChargesHelper.getLoanDisbursementJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_PERCENTAGE_AMOUNT, "1"));
+        Integer percentageDisbursementCharge = (Integer) ChargesHelper.createCharges(requestSpec, responseSpec,
+                ChargesHelper.getLoanDisbursementJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_PERCENTAGE_AMOUNT, "1"), CommonConstants.RESPONSE_RESOURCE_ID);
         addCharges(charges, percentageDisbursementCharge, "1", null);
 
-        Integer percentageSpecifiedDueDateCharge = ChargesHelper.createCharges(requestSpec, responseSpec,
-                ChargesHelper.getLoanSpecifiedDueDateJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_PERCENTAGE_AMOUNT, "1", false));
+        Integer percentageSpecifiedDueDateCharge = (Integer) ChargesHelper.createCharges(requestSpec, responseSpec,
+                ChargesHelper.getLoanSpecifiedDueDateJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_PERCENTAGE_AMOUNT, "1", false), CommonConstants.RESPONSE_RESOURCE_ID);
         addCharges(charges, percentageSpecifiedDueDateCharge, "1", "29 September 2011");
 
-        Integer percentageInstallmentFee = ChargesHelper.createCharges(requestSpec, responseSpec,
-                ChargesHelper.getLoanInstallmentJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_PERCENTAGE_AMOUNT, "1", false));
+        Integer percentageInstallmentFee = (Integer) ChargesHelper.createCharges(requestSpec, responseSpec,
+                ChargesHelper.getLoanInstallmentJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_PERCENTAGE_AMOUNT, "1", false), CommonConstants.RESPONSE_RESOURCE_ID);
         addCharges(charges, percentageInstallmentFee, "1", "29 September 2011");
 
         final Account assetAccount = this.accountHelper.createAssetAccount();
@@ -1856,8 +1871,8 @@ public class ClientLoanIntegrationTest {
         this.journalEntryHelper.checkJournalEntryForExpenseAccount(expenseAccount, "20 December 2011",
                 new JournalEntry(Float.valueOf("61.79"), JournalEntry.TransactionType.DEBIT));
 
-        Integer percentagePenaltySpecifiedDueDate = ChargesHelper.createCharges(requestSpec, responseSpec,
-                ChargesHelper.getLoanSpecifiedDueDateJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_PERCENTAGE_AMOUNT, "1", true));
+        Integer percentagePenaltySpecifiedDueDate = (Integer) ChargesHelper.createCharges(requestSpec, responseSpec,
+                ChargesHelper.getLoanSpecifiedDueDateJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_PERCENTAGE_AMOUNT, "1", true), CommonConstants.RESPONSE_RESOURCE_ID);
         this.loanTransactionHelper.addChargesForLoan(loanID, LoanTransactionHelper.getSpecifiedDueDateChargesForLoanAsJSON(
                 String.valueOf(percentagePenaltySpecifiedDueDate), "29 September 2011", "1"));
         loanCharges.clear();
@@ -1924,16 +1939,16 @@ public class ClientLoanIntegrationTest {
 
         // Add charges with payment mode regular
         List<HashMap> charges = new ArrayList<HashMap>();
-        Integer amountPlusInterestPercentageDisbursementCharge = ChargesHelper.createCharges(requestSpec, responseSpec,
-                ChargesHelper.getLoanDisbursementJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_PERCENTAGE_AMOUNT_AND_INTEREST, "1"));
+        Integer amountPlusInterestPercentageDisbursementCharge = (Integer) ChargesHelper.createCharges(requestSpec, responseSpec,
+                ChargesHelper.getLoanDisbursementJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_PERCENTAGE_AMOUNT_AND_INTEREST, "1"), CommonConstants.RESPONSE_RESOURCE_ID);
         addCharges(charges, amountPlusInterestPercentageDisbursementCharge, "1", null);
 
-        Integer amountPlusInterestPercentageSpecifiedDueDateCharge = ChargesHelper
+        Integer amountPlusInterestPercentageSpecifiedDueDateCharge = (Integer) ChargesHelper
                 .createCharges(requestSpec, responseSpec, ChargesHelper.getLoanSpecifiedDueDateJSON(
-                        ChargesHelper.CHARGE_CALCULATION_TYPE_PERCENTAGE_AMOUNT_AND_INTEREST, "1", false));
+                        ChargesHelper.CHARGE_CALCULATION_TYPE_PERCENTAGE_AMOUNT_AND_INTEREST, "1", false), CommonConstants.RESPONSE_RESOURCE_ID);
 
-        Integer amountPlusInterestPercentageInstallmentFee = ChargesHelper.createCharges(requestSpec, responseSpec,
-                ChargesHelper.getLoanInstallmentJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_PERCENTAGE_AMOUNT_AND_INTEREST, "1", false));
+        Integer amountPlusInterestPercentageInstallmentFee = (Integer) ChargesHelper.createCharges(requestSpec, responseSpec,
+                ChargesHelper.getLoanInstallmentJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_PERCENTAGE_AMOUNT_AND_INTEREST, "1", false), CommonConstants.RESPONSE_RESOURCE_ID);
         addCharges(charges, amountPlusInterestPercentageInstallmentFee, "1", "29 September 2011");
 
         final Account assetAccount = this.accountHelper.createAssetAccount();
@@ -2062,8 +2077,8 @@ public class ClientLoanIntegrationTest {
         this.journalEntryHelper.checkJournalEntryForExpenseAccount(expenseAccount, "20 December 2011",
                 new JournalEntry(Float.valueOf("61.79"), JournalEntry.TransactionType.DEBIT));
 
-        Integer amountPlusInterestPercentagePenaltySpecifiedDueDate = ChargesHelper.createCharges(requestSpec, responseSpec,
-                ChargesHelper.getLoanSpecifiedDueDateJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_PERCENTAGE_AMOUNT, "1", true));
+        Integer amountPlusInterestPercentagePenaltySpecifiedDueDate = (Integer) ChargesHelper.createCharges(requestSpec, responseSpec,
+                ChargesHelper.getLoanSpecifiedDueDateJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_PERCENTAGE_AMOUNT, "1", true), CommonConstants.RESPONSE_RESOURCE_ID);
         this.loanTransactionHelper.addChargesForLoan(
                 loanID,
                 LoanTransactionHelper.getSpecifiedDueDateChargesForLoanAsJSON(
@@ -2133,13 +2148,13 @@ public class ClientLoanIntegrationTest {
 
         // Add charges with payment mode regular
         List<HashMap> charges = new ArrayList<HashMap>();
-        Integer flatDisbursement = ChargesHelper.createCharges(requestSpec, responseSpec, ChargesHelper.getLoanDisbursementJSON());
+        Integer flatDisbursement = (Integer) ChargesHelper.createCharges(requestSpec, responseSpec, ChargesHelper.getLoanDisbursementJSON(), CommonConstants.RESPONSE_RESOURCE_ID);
         addCharges(charges, flatDisbursement, "100", null);
-        Integer flatSpecifiedDueDate = ChargesHelper.createCharges(requestSpec, responseSpec,
-                ChargesHelper.getLoanSpecifiedDueDateJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_FLAT, "100", false));
+        Integer flatSpecifiedDueDate = (Integer) ChargesHelper.createCharges(requestSpec, responseSpec,
+                ChargesHelper.getLoanSpecifiedDueDateJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_FLAT, "100", false), CommonConstants.RESPONSE_RESOURCE_ID);
         addCharges(charges, flatSpecifiedDueDate, "100", "29 September 2011");
-        Integer flatInstallmentFee = ChargesHelper.createCharges(requestSpec, responseSpec,
-                ChargesHelper.getLoanInstallmentJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_FLAT, "50", false));
+        Integer flatInstallmentFee = (Integer) ChargesHelper.createCharges(requestSpec, responseSpec,
+                ChargesHelper.getLoanInstallmentJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_FLAT, "50", false), CommonConstants.RESPONSE_RESOURCE_ID);
         addCharges(charges, flatInstallmentFee, "50", null);
 
         final Account assetAccount = this.accountHelper.createAssetAccount();
@@ -2262,8 +2277,8 @@ public class ClientLoanIntegrationTest {
         this.journalEntryHelper.checkJournalEntryForExpenseAccount(expenseAccount, "20 December 2011",
                 new JournalEntry(Float.valueOf("61.79"), JournalEntry.TransactionType.DEBIT));
 
-        Integer flatPenaltySpecifiedDueDate = ChargesHelper.createCharges(requestSpec, responseSpec,
-                ChargesHelper.getLoanSpecifiedDueDateJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_FLAT, "100", true));
+        Integer flatPenaltySpecifiedDueDate = (Integer) ChargesHelper.createCharges(requestSpec, responseSpec,
+                ChargesHelper.getLoanSpecifiedDueDateJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_FLAT, "100", true), CommonConstants.RESPONSE_RESOURCE_ID);
         this.loanTransactionHelper.addChargesForLoan(loanID, LoanTransactionHelper.getSpecifiedDueDateChargesForLoanAsJSON(
                 String.valueOf(flatPenaltySpecifiedDueDate), "29 September 2011", "100"));
         loanCharges.clear();
@@ -2331,16 +2346,16 @@ public class ClientLoanIntegrationTest {
 
         // Add charges with payment mode regular
         List<HashMap> charges = new ArrayList<HashMap>();
-        Integer percentageDisbursementCharge = ChargesHelper.createCharges(requestSpec, responseSpec,
-                ChargesHelper.getLoanDisbursementJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_PERCENTAGE_AMOUNT, "1"));
+        Integer percentageDisbursementCharge = (Integer) ChargesHelper.createCharges(requestSpec, responseSpec,
+                ChargesHelper.getLoanDisbursementJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_PERCENTAGE_AMOUNT, "1"), CommonConstants.RESPONSE_RESOURCE_ID);
         addCharges(charges, percentageDisbursementCharge, "1", null);
 
-        Integer percentageSpecifiedDueDateCharge = ChargesHelper.createCharges(requestSpec, responseSpec,
-                ChargesHelper.getLoanSpecifiedDueDateJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_PERCENTAGE_AMOUNT, "1", false));
+        Integer percentageSpecifiedDueDateCharge = (Integer) ChargesHelper.createCharges(requestSpec, responseSpec,
+                ChargesHelper.getLoanSpecifiedDueDateJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_PERCENTAGE_AMOUNT, "1", false), CommonConstants.RESPONSE_RESOURCE_ID);
         addCharges(charges, percentageSpecifiedDueDateCharge, "1", "29 September 2011");
 
-        Integer percentageInstallmentFee = ChargesHelper.createCharges(requestSpec, responseSpec,
-                ChargesHelper.getLoanInstallmentJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_PERCENTAGE_AMOUNT, "1", false));
+        Integer percentageInstallmentFee = (Integer) ChargesHelper.createCharges(requestSpec, responseSpec,
+                ChargesHelper.getLoanInstallmentJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_PERCENTAGE_AMOUNT, "1", false), CommonConstants.RESPONSE_RESOURCE_ID);
         addCharges(charges, percentageInstallmentFee, "1", "29 September 2011");
 
         final Account assetAccount = this.accountHelper.createAssetAccount();
@@ -2464,8 +2479,8 @@ public class ClientLoanIntegrationTest {
         this.journalEntryHelper.checkJournalEntryForExpenseAccount(expenseAccount, "20 December 2011",
                 new JournalEntry(Float.valueOf("61.79"), JournalEntry.TransactionType.DEBIT));
 
-        Integer percentagePenaltySpecifiedDueDate = ChargesHelper.createCharges(requestSpec, responseSpec,
-                ChargesHelper.getLoanSpecifiedDueDateJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_PERCENTAGE_AMOUNT, "1", true));
+        Integer percentagePenaltySpecifiedDueDate = (Integer) ChargesHelper.createCharges(requestSpec, responseSpec,
+                ChargesHelper.getLoanSpecifiedDueDateJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_PERCENTAGE_AMOUNT, "1", true), CommonConstants.RESPONSE_RESOURCE_ID);
         this.loanTransactionHelper.addChargesForLoan(loanID, LoanTransactionHelper.getSpecifiedDueDateChargesForLoanAsJSON(
                 String.valueOf(percentagePenaltySpecifiedDueDate), "29 September 2011", "1"));
         loanCharges.clear();
@@ -2532,17 +2547,17 @@ public class ClientLoanIntegrationTest {
 
         // Add charges with payment mode regular
         List<HashMap> charges = new ArrayList<HashMap>();
-        Integer amountPlusInterestPercentageDisbursementCharge = ChargesHelper.createCharges(requestSpec, responseSpec,
-                ChargesHelper.getLoanDisbursementJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_PERCENTAGE_AMOUNT_AND_INTEREST, "1"));
+        Integer amountPlusInterestPercentageDisbursementCharge = (Integer) ChargesHelper.createCharges(requestSpec, responseSpec,
+                ChargesHelper.getLoanDisbursementJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_PERCENTAGE_AMOUNT_AND_INTEREST, "1"), CommonConstants.RESPONSE_RESOURCE_ID);
         addCharges(charges, amountPlusInterestPercentageDisbursementCharge, "1", null);
 
-        Integer amountPlusInterestPercentageSpecifiedDueDateCharge = ChargesHelper
+        Integer amountPlusInterestPercentageSpecifiedDueDateCharge = (Integer) ChargesHelper
                 .createCharges(requestSpec, responseSpec, ChargesHelper.getLoanSpecifiedDueDateJSON(
-                        ChargesHelper.CHARGE_CALCULATION_TYPE_PERCENTAGE_AMOUNT_AND_INTEREST, "1", false));
+                        ChargesHelper.CHARGE_CALCULATION_TYPE_PERCENTAGE_AMOUNT_AND_INTEREST, "1", false), CommonConstants.RESPONSE_RESOURCE_ID);
         addCharges(charges, amountPlusInterestPercentageSpecifiedDueDateCharge, "1", "29 September 2011");
 
-        Integer amountPlusInterestPercentageInstallmentFee = ChargesHelper.createCharges(requestSpec, responseSpec,
-                ChargesHelper.getLoanInstallmentJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_PERCENTAGE_AMOUNT_AND_INTEREST, "1", false));
+        Integer amountPlusInterestPercentageInstallmentFee = (Integer) ChargesHelper.createCharges(requestSpec, responseSpec,
+                ChargesHelper.getLoanInstallmentJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_PERCENTAGE_AMOUNT_AND_INTEREST, "1", false), CommonConstants.RESPONSE_RESOURCE_ID);
         addCharges(charges, amountPlusInterestPercentageInstallmentFee, "1", "29 September 2011");
 
         final Account assetAccount = this.accountHelper.createAssetAccount();
@@ -2668,8 +2683,8 @@ public class ClientLoanIntegrationTest {
         this.journalEntryHelper.checkJournalEntryForExpenseAccount(expenseAccount, "20 December 2011",
                 new JournalEntry(Float.valueOf("61.79"), JournalEntry.TransactionType.DEBIT));
 
-        Integer amountPlusInterestPercentagePenaltySpecifiedDueDate = ChargesHelper.createCharges(requestSpec, responseSpec,
-                ChargesHelper.getLoanSpecifiedDueDateJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_PERCENTAGE_AMOUNT, "1", true));
+        Integer amountPlusInterestPercentagePenaltySpecifiedDueDate = (Integer) ChargesHelper.createCharges(requestSpec, responseSpec,
+                ChargesHelper.getLoanSpecifiedDueDateJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_PERCENTAGE_AMOUNT, "1", true), CommonConstants.RESPONSE_RESOURCE_ID);
         this.loanTransactionHelper.addChargesForLoan(
                 loanID,
                 LoanTransactionHelper.getSpecifiedDueDateChargesForLoanAsJSON(

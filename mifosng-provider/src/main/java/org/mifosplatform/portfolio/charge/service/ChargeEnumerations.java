@@ -60,6 +60,10 @@ public class ChargeEnumerations {
                 optionData = new EnumOptionData(ChargeTimeType.OVERDRAFT_FEE.getValue().longValue(),
                         ChargeTimeType.OVERDRAFT_FEE.getCode(), "Overdraft Fee");
             break;
+            case DEPOSIT_FEE:
+                optionData = new EnumOptionData(ChargeTimeType.DEPOSIT_FEE.getValue().longValue(), ChargeTimeType.DEPOSIT_FEE.getCode(),
+                        "Deposit Fee");
+            break;
             default:
                 optionData = new EnumOptionData(ChargeTimeType.INVALID.getValue().longValue(), ChargeTimeType.INVALID.getCode(), "Invalid");
             break;

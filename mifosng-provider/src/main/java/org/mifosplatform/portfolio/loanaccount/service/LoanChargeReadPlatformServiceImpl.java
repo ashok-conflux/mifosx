@@ -12,6 +12,8 @@ import java.util.Collection;
 import java.util.List;
 
 import org.joda.time.LocalDate;
+import org.mifosplatform.infrastructure.codes.data.CodeValueData;
+import org.mifosplatform.infrastructure.codes.service.CodeValueReadPlatformService;
 import org.mifosplatform.infrastructure.core.data.EnumOptionData;
 import org.mifosplatform.infrastructure.core.domain.JdbcSupport;
 import org.mifosplatform.infrastructure.core.service.RoutingDataSource;
@@ -23,6 +25,7 @@ import org.mifosplatform.portfolio.charge.service.ChargeEnumerations;
 import org.mifosplatform.portfolio.common.service.DropdownReadPlatformService;
 import org.mifosplatform.portfolio.loanaccount.data.LoanChargeData;
 import org.mifosplatform.portfolio.loanaccount.data.LoanInstallmentChargeData;
+import org.mifosplatform.portfolio.paymentdetail.PaymentDetailConstants;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
@@ -35,15 +38,17 @@ public class LoanChargeReadPlatformServiceImpl implements LoanChargeReadPlatform
     private final PlatformSecurityContext context;
     private final ChargeDropdownReadPlatformService chargeDropdownReadPlatformService;
     private final DropdownReadPlatformService dropdownReadPlatformService;
+    private final CodeValueReadPlatformService codeValueReadPlatformService;
 
     @Autowired
     public LoanChargeReadPlatformServiceImpl(final PlatformSecurityContext context,
             final ChargeDropdownReadPlatformService chargeDropdownReadPlatformService, final RoutingDataSource dataSource,
-            final DropdownReadPlatformService dropdownReadPlatformService) {
+            final DropdownReadPlatformService dropdownReadPlatformService, final CodeValueReadPlatformService codeValueReadPlatformService) {
         this.context = context;
         this.chargeDropdownReadPlatformService = chargeDropdownReadPlatformService;
         this.jdbcTemplate = new JdbcTemplate(dataSource);
         this.dropdownReadPlatformService = dropdownReadPlatformService;
+        this.codeValueReadPlatformService = codeValueReadPlatformService;
     }
 
     private static final class LoanChargeMapper implements RowMapper<LoanChargeData> {
@@ -133,10 +138,11 @@ public class LoanChargeReadPlatformServiceImpl implements LoanChargeReadPlatform
         final List<EnumOptionData> savingsChargeTimeTypeOptions = this.chargeDropdownReadPlatformService
                 .retrieveSavingsCollectionTimeTypes();
         final List<EnumOptionData> feeFrequencyOptions = this.dropdownReadPlatformService.retrievePeriodFrequencyTypeOptions();
-
+        final Collection<CodeValueData> paymentTypeOptions = this.codeValueReadPlatformService
+                .retrieveCodeValuesByCode(PaymentDetailConstants.paymentTypeCodeName);
         return ChargeData.template(null, allowedChargeCalculationTypeOptions, null, allowedChargeTimeOptions, null,
                 loansChargeCalculationTypeOptions, loansChargeTimeTypeOptions, savingsChargeCalculationTypeOptions,
-                savingsChargeTimeTypeOptions, feeFrequencyOptions);
+                savingsChargeTimeTypeOptions, feeFrequencyOptions, paymentTypeOptions);
     }
 
     @Override

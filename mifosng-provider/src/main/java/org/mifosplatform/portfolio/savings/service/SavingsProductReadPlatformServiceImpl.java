@@ -90,6 +90,7 @@ public class SavingsProductReadPlatformServiceImpl implements SavingsProductRead
             sqlBuilder.append("sp.lockin_period_frequency as lockinPeriodFrequency,");
             sqlBuilder.append("sp.lockin_period_frequency_enum as lockinPeriodFrequencyType, ");
             sqlBuilder.append("sp.withdrawal_fee_for_transfer as withdrawalFeeForTransfers, ");
+            sqlBuilder.append("sp.deposit_fee_for_transfer as depositFeeForTransfers, ");
             sqlBuilder.append("sp.allow_overdraft as allowOverdraft, ");
             sqlBuilder.append("sp.overdraft_limit as overdraftLimit, ");
             sqlBuilder.append("sp.accounting_type as accountingType ");
@@ -151,11 +152,13 @@ public class SavingsProductReadPlatformServiceImpl implements SavingsProductRead
             }
 
             final boolean withdrawalFeeForTransfers = rs.getBoolean("withdrawalFeeForTransfers");
+            final boolean depositFeeForTransfers = rs.getBoolean("depositFeeForTransfers");
             final boolean allowOverdraft = rs.getBoolean("allowOverdraft");
             final BigDecimal overdraftLimit = rs.getBigDecimal("overdraftLimit");
+            
             return SavingsProductData.instance(id, name, shortName, description, currency, nominalAnnualInterestRate,
                     compoundingInterestPeriodType, interestPostingPeriodType, interestCalculationType, interestCalculationDaysInYearType,
-                    minRequiredOpeningBalance, lockinPeriodFrequency, lockinPeriodFrequencyType, withdrawalFeeForTransfers,
+                    minRequiredOpeningBalance, lockinPeriodFrequency, lockinPeriodFrequencyType, withdrawalFeeForTransfers, depositFeeForTransfers,
                     accountingRuleType, allowOverdraft, overdraftLimit);
         }
     }

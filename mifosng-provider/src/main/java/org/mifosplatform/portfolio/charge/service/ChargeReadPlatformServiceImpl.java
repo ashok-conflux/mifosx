@@ -12,6 +12,8 @@ import java.util.Collection;
 import java.util.List;
 
 import org.joda.time.MonthDay;
+import org.mifosplatform.infrastructure.codes.data.CodeValueData;
+import org.mifosplatform.infrastructure.codes.service.CodeValueReadPlatformService;
 import org.mifosplatform.infrastructure.core.data.EnumOptionData;
 import org.mifosplatform.infrastructure.core.domain.JdbcSupport;
 import org.mifosplatform.infrastructure.core.service.RoutingDataSource;
@@ -19,10 +21,12 @@ import org.mifosplatform.infrastructure.security.service.PlatformSecurityContext
 import org.mifosplatform.organisation.monetary.data.CurrencyData;
 import org.mifosplatform.organisation.monetary.service.CurrencyReadPlatformService;
 import org.mifosplatform.portfolio.charge.data.ChargeData;
+import org.mifosplatform.portfolio.charge.data.PaymentTypeChargeData;
 import org.mifosplatform.portfolio.charge.domain.ChargeAppliesTo;
 import org.mifosplatform.portfolio.charge.exception.ChargeNotFoundException;
 import org.mifosplatform.portfolio.common.service.CommonEnumerations;
 import org.mifosplatform.portfolio.common.service.DropdownReadPlatformService;
+import org.mifosplatform.portfolio.paymentdetail.PaymentDetailConstants;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -38,17 +42,19 @@ public class ChargeReadPlatformServiceImpl implements ChargeReadPlatformService 
     private final CurrencyReadPlatformService currencyReadPlatformService;
     private final ChargeDropdownReadPlatformService chargeDropdownReadPlatformService;
     private final DropdownReadPlatformService dropdownReadPlatformService;
+    private final CodeValueReadPlatformService codeValueReadPlatformService;
 
     @Autowired
     public ChargeReadPlatformServiceImpl(final PlatformSecurityContext context,
             final CurrencyReadPlatformService currencyReadPlatformService,
             final ChargeDropdownReadPlatformService chargeDropdownReadPlatformService, final RoutingDataSource dataSource,
-            final DropdownReadPlatformService dropdownReadPlatformService) {
+            final DropdownReadPlatformService dropdownReadPlatformService, final CodeValueReadPlatformService codeValueReadPlatformService) {
         this.context = context;
         this.chargeDropdownReadPlatformService = chargeDropdownReadPlatformService;
         this.jdbcTemplate = new JdbcTemplate(dataSource);
         this.currencyReadPlatformService = currencyReadPlatformService;
         this.dropdownReadPlatformService = dropdownReadPlatformService;
+        this.codeValueReadPlatformService = codeValueReadPlatformService;
     }
 
     @Override
@@ -108,10 +114,11 @@ public class ChargeReadPlatformServiceImpl implements ChargeReadPlatformService 
         final List<EnumOptionData> savingsChargeTimeTypeOptions = this.chargeDropdownReadPlatformService
                 .retrieveSavingsCollectionTimeTypes();
         final List<EnumOptionData> feeFrequencyOptions = this.dropdownReadPlatformService.retrievePeriodFrequencyTypeOptions();
-
+        final Collection<CodeValueData> paymentTypeOptions = this.codeValueReadPlatformService
+                .retrieveCodeValuesByCode(PaymentDetailConstants.paymentTypeCodeName);
         return ChargeData.template(currencyOptions, allowedChargeCalculationTypeOptions, allowedChargeAppliesToOptions,
                 allowedChargeTimeOptions, chargePaymentOptions, loansChargeCalculationTypeOptions, loansChargeTimeTypeOptions,
-                savingsChargeCalculationTypeOptions, savingsChargeTimeTypeOptions, feeFrequencyOptions);
+                savingsChargeCalculationTypeOptions, savingsChargeTimeTypeOptions, feeFrequencyOptions, paymentTypeOptions);
     }
 
     @Override
@@ -189,7 +196,7 @@ public class ChargeReadPlatformServiceImpl implements ChargeReadPlatformService 
                     + "c.is_active as active, oc.name as currencyName, oc.decimal_places as currencyDecimalPlaces, "
                     + "oc.currency_multiplesof as inMultiplesOf, oc.display_symbol as currencyDisplaySymbol, "
                     + "oc.internationalized_name_code as currencyNameCode, c.fee_on_day as feeOnDay, c.fee_on_month as feeOnMonth, "
-                    + "c.fee_interval as feeInterval, c.fee_frequency as feeFrequency,c.min_cap as minCap,c.max_cap as maxCap "
+                    + "c.fee_interval as feeInterval, c.fee_frequency as feeFrequency,c.min_cap as minCap,c.max_cap as maxCap, c.applicable_to_all_products as applicableToAllProducts "
                     + "from m_charge c " + "join m_organisation_currency oc on c.currency_code = oc.code";
         }
 
@@ -246,9 +253,11 @@ public class ChargeReadPlatformServiceImpl implements ChargeReadPlatformService 
             }
             final BigDecimal minCap = rs.getBigDecimal("minCap");
             final BigDecimal maxCap = rs.getBigDecimal("maxCap");
+            final boolean applicableToAllProducts = rs.getBoolean("applicableToAllProducts");
 
             return ChargeData.instance(id, name, amount, currency, chargeTimeType, chargeAppliesToType, chargeCalculationType,
-                    chargePaymentMode, feeOnMonthDay, feeInterval, penalty, active, minCap, maxCap, feeFrequencyType);
+                    chargePaymentMode, feeOnMonthDay, feeInterval, penalty, active, minCap, maxCap, feeFrequencyType,
+                    applicableToAllProducts);
         }
     }
 
@@ -258,11 +267,13 @@ public class ChargeReadPlatformServiceImpl implements ChargeReadPlatformService 
 
         final ChargeMapper rm = new ChargeMapper();
 
-        String sql = "select " + rm.chargeSchema()
-                + " where c.is_deleted=0 and c.is_active=1 and c.charge_applies_to_enum=? order by c.name ";
+        String sql = "select "
+                + rm.chargeSchema()
+                + " where c.is_deleted=0 and c.is_active=1 and c.charge_applies_to_enum=? and (c.applicable_to_all_products is null or c.applicable_to_all_products = 0 ) order by c.name ";
         if (feeChargesOnly) {
-            sql = "select " + rm.chargeSchema()
-                    + " where c.is_deleted=0 and c.is_active=1 and c.is_penalty=0 and c.charge_applies_to_enum=? order by c.name ";
+            sql = "select "
+                    + rm.chargeSchema()
+                    + " where c.is_deleted=0 and c.is_active=1 and c.is_penalty=0 and c.charge_applies_to_enum=? and (c.applicable_to_all_products is null or c.applicable_to_all_products = 0 ) order by c.name ";
         }
 
         return this.jdbcTemplate.query(sql, rm, new Object[] { ChargeAppliesTo.SAVINGS.getValue() });
@@ -289,6 +300,39 @@ public class ChargeReadPlatformServiceImpl implements ChargeReadPlatformService 
                 + " where c.is_deleted=0 and c.is_active=1 and spc.savings_product_id=?";
 
         return this.jdbcTemplate.query(sql, rm, new Object[] { savingsProductId });
+    }
+
+    @Override
+    public Collection<PaymentTypeChargeData> retrievePaymentTypeCharges(Long chargeId) {
+        this.context.authenticatedUser();
+
+        final PaymentTypeChargeMapper rm = new PaymentTypeChargeMapper();
+
+        final String sql = "select " + rm.paymentTypeChargeSchema() + " where ptc.charge_id = ? ";
+
+        return this.jdbcTemplate.query(sql, rm, new Object[] { chargeId });
+    }
+
+    private static final class PaymentTypeChargeMapper implements RowMapper<PaymentTypeChargeData> {
+
+        public String paymentTypeChargeSchema() {
+            return " ptc.id as id, ptc.charge_id as chargeId, cv.id as paymentTypeId, cv.code_value as codeValue, "
+                    + " ptc.charge_calculation_type_enum as chargeCalculationTypeEnum, ptc.amount as amount "
+                    + " from m_payment_type_charge ptc left join m_code_value cv on cv.id=ptc.payment_type_id";
+        }
+
+        @Override
+        public PaymentTypeChargeData mapRow(final ResultSet rs, @SuppressWarnings("unused") final int rowNum) throws SQLException {
+            final Long id = rs.getLong("id");
+            final Long chargeId = rs.getLong("chargeId");
+            final Long paymentTypeId = JdbcSupport.getLong(rs, "paymentTypeId");
+            final String paymentTypeCode = rs.getString("codeValue");
+            final int chargeCalculation = rs.getInt("chargeCalculationTypeEnum");
+            final EnumOptionData chargeCalculationType = ChargeEnumerations.chargeCalculationType(chargeCalculation);
+            final BigDecimal amount = rs.getBigDecimal("amount");
+            final CodeValueData paymentType = CodeValueData.instance(paymentTypeId, paymentTypeCode);
+            return PaymentTypeChargeData.instance(id, chargeId, paymentType, chargeCalculationType, amount);
+        }
     }
 
 }

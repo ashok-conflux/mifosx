@@ -88,9 +88,9 @@ public class RecurringDepositAccount extends SavingsAccount {
             final SavingsPostingInterestPeriodType interestPostingPeriodType, final SavingsInterestCalculationType interestCalculationType,
             final SavingsInterestCalculationDaysInYearType interestCalculationDaysInYearType, final BigDecimal minRequiredOpeningBalance,
             final Integer lockinPeriodFrequency, final SavingsPeriodFrequencyType lockinPeriodFrequencyType,
-            final boolean withdrawalFeeApplicableForTransfer, final Set<SavingsAccountCharge> savingsAccountCharges,
-            final DepositAccountTermAndPreClosure accountTermAndPreClosure, final DepositAccountRecurringDetail recurringDetail,
-            final DepositAccountInterestRateChart chart) {
+            final boolean withdrawalFeeApplicableForTransfer, final boolean depositFeeApplicableForTransfer,
+            final Set<SavingsAccountCharge> savingsAccountCharges, final DepositAccountTermAndPreClosure accountTermAndPreClosure,
+            final DepositAccountRecurringDetail recurringDetail, final DepositAccountInterestRateChart chart) {
 
         final boolean allowOverdraft = false;
         final BigDecimal overdraftLimit = new BigDecimal(0);
@@ -99,8 +99,8 @@ public class RecurringDepositAccount extends SavingsAccount {
         return new RecurringDepositAccount(client, group, product, fieldOfficer, accountNo, externalId, status, accountType,
                 submittedOnDate, submittedBy, interestRate, interestCompoundingPeriodType, interestPostingPeriodType,
                 interestCalculationType, interestCalculationDaysInYearType, minRequiredOpeningBalance, lockinPeriodFrequency,
-                lockinPeriodFrequencyType, withdrawalFeeApplicableForTransfer, savingsAccountCharges, accountTermAndPreClosure,
-                recurringDetail, chart, allowOverdraft, overdraftLimit);
+                lockinPeriodFrequencyType, withdrawalFeeApplicableForTransfer, depositFeeApplicableForTransfer, savingsAccountCharges,
+                accountTermAndPreClosure, recurringDetail, chart, allowOverdraft, overdraftLimit);
     }
 
     public static RecurringDepositAccount createNewActivatedAccount(final Client client, final Group group, final SavingsProduct product,
@@ -110,9 +110,9 @@ public class RecurringDepositAccount extends SavingsAccount {
             final SavingsPostingInterestPeriodType interestPostingPeriodType, final SavingsInterestCalculationType interestCalculationType,
             final SavingsInterestCalculationDaysInYearType interestCalculationDaysInYearType, final BigDecimal minRequiredOpeningBalance,
             final Integer lockinPeriodFrequency, final SavingsPeriodFrequencyType lockinPeriodFrequencyType,
-            final boolean withdrawalFeeApplicableForTransfer, final Set<SavingsAccountCharge> savingsAccountCharges,
-            final DepositAccountTermAndPreClosure accountTermAndPreClosure, final DepositAccountRecurringDetail recurringDetail,
-            final DepositAccountInterestRateChart chart) {
+            final boolean withdrawalFeeApplicableForTransfer, final boolean depositFeeApplicableForTransfer,
+            final Set<SavingsAccountCharge> savingsAccountCharges, final DepositAccountTermAndPreClosure accountTermAndPreClosure,
+            final DepositAccountRecurringDetail recurringDetail, final DepositAccountInterestRateChart chart) {
 
         final boolean allowOverdraft = false;
         final BigDecimal overdraftLimit = new BigDecimal(0);
@@ -121,8 +121,8 @@ public class RecurringDepositAccount extends SavingsAccount {
         return new RecurringDepositAccount(client, group, product, fieldOfficer, accountNo, externalId, status, accountType,
                 submittedOnDate, submittedBy, interestRate, interestCompoundingPeriodType, interestPostingPeriodType,
                 interestCalculationType, interestCalculationDaysInYearType, minRequiredOpeningBalance, lockinPeriodFrequency,
-                lockinPeriodFrequencyType, withdrawalFeeApplicableForTransfer, savingsAccountCharges, accountTermAndPreClosure,
-                recurringDetail, chart, allowOverdraft, overdraftLimit);
+                lockinPeriodFrequencyType, withdrawalFeeApplicableForTransfer, depositFeeApplicableForTransfer, savingsAccountCharges,
+                accountTermAndPreClosure, recurringDetail, chart, allowOverdraft, overdraftLimit);
     }
 
     private RecurringDepositAccount(final Client client, final Group group, final SavingsProduct product, final Staff fieldOfficer,
@@ -132,14 +132,15 @@ public class RecurringDepositAccount extends SavingsAccount {
             final SavingsPostingInterestPeriodType interestPostingPeriodType, final SavingsInterestCalculationType interestCalculationType,
             final SavingsInterestCalculationDaysInYearType interestCalculationDaysInYearType, final BigDecimal minRequiredOpeningBalance,
             final Integer lockinPeriodFrequency, final SavingsPeriodFrequencyType lockinPeriodFrequencyType,
-            final boolean withdrawalFeeApplicableForTransfer, final Set<SavingsAccountCharge> savingsAccountCharges,
-            final DepositAccountTermAndPreClosure accountTermAndPreClosure, final DepositAccountRecurringDetail recurringDetail,
-            final DepositAccountInterestRateChart chart, final boolean allowOverdraft, final BigDecimal overdraftLimit) {
+            final boolean withdrawalFeeApplicableForTransfer, final boolean depositFeeApplicableForTransfer,
+            final Set<SavingsAccountCharge> savingsAccountCharges, final DepositAccountTermAndPreClosure accountTermAndPreClosure,
+            final DepositAccountRecurringDetail recurringDetail, final DepositAccountInterestRateChart chart, final boolean allowOverdraft,
+            final BigDecimal overdraftLimit) {
 
         super(client, group, product, fieldOfficer, accountNo, externalId, status, accountType, submittedOnDate, submittedBy,
                 nominalAnnualInterestRate, interestCompoundingPeriodType, interestPostingPeriodType, interestCalculationType,
                 interestCalculationDaysInYearType, minRequiredOpeningBalance, lockinPeriodFrequency, lockinPeriodFrequencyType,
-                withdrawalFeeApplicableForTransfer, savingsAccountCharges, allowOverdraft, overdraftLimit);
+                withdrawalFeeApplicableForTransfer, depositFeeApplicableForTransfer, savingsAccountCharges, allowOverdraft, overdraftLimit);
 
         this.accountTermAndPreClosure = accountTermAndPreClosure;
         this.recurringDetail = recurringDetail;
@@ -471,7 +472,8 @@ public class RecurringDepositAccount extends SavingsAccount {
         if (minRequiredOpeningBalance.isGreaterThanZero()) {
             final SavingsAccountTransactionDTO transactionDTO = new SavingsAccountTransactionDTO(fmt, getActivationLocalDate(),
                     minRequiredOpeningBalance.getAmount(), null, new Date());
-            deposit(transactionDTO);
+            final boolean applyDepositFee = false;
+            deposit(transactionDTO, applyDepositFee);
 
             // update existing transactions so derived balance fields are
             // correct.
@@ -729,7 +731,7 @@ public class RecurringDepositAccount extends SavingsAccount {
     }
 
     @Override
-    public SavingsAccountTransaction deposit(final SavingsAccountTransactionDTO transactionDTO) {
+    public SavingsAccountTransaction deposit(final SavingsAccountTransactionDTO transactionDTO, final boolean applyDepositFee) {
 
         if (isAccountMatured()) {
             final String defaultUserMessage = "Transaction is not allowed. Account is matured.";
@@ -767,7 +769,7 @@ public class RecurringDepositAccount extends SavingsAccount {
             throw new PlatformApiDataValidationException(dataValidationErrors);
         }
 
-        final SavingsAccountTransaction transaction = super.deposit(transactionDTO);
+        final SavingsAccountTransaction transaction = super.deposit(transactionDTO, applyDepositFee);
 
         return transaction;
     }
@@ -989,6 +991,7 @@ public class RecurringDepositAccount extends SavingsAccount {
         final SavingsPeriodFrequencyType lockinPeriodFrequencyType = SavingsPeriodFrequencyType.fromInt(this.lockinPeriodFrequencyType);
         final Integer lockinPeriodFrequency = this.lockinPeriodFrequency;
         final boolean withdrawalFeeApplicableForTransfer = false;
+        final boolean depositFeeApplicableForTransfer = false;
 
         LocalDate now = DateUtils.getLocalDateOfTenant();
 
@@ -997,8 +1000,8 @@ public class RecurringDepositAccount extends SavingsAccount {
         RecurringDepositAccount rdAccount = RecurringDepositAccount.createNewActivatedAccount(client, group, product, fieldOfficer,
                 accountNumber, externalId, accountType, getClosedOnDate(), closedBy, interestRate, compoundingPeriodType,
                 postingPeriodType, interestCalculationType, daysInYearType, minRequiredOpeningBalance, lockinPeriodFrequency,
-                lockinPeriodFrequencyType, withdrawalFeeApplicableForTransfer, savingsAccountCharges, newAccountTermAndPreClosure,
-                recurringDetail, newChart);
+                lockinPeriodFrequencyType, withdrawalFeeApplicableForTransfer, depositFeeApplicableForTransfer, savingsAccountCharges,
+                newAccountTermAndPreClosure, recurringDetail, newChart);
 
         rdAccount.setDatesFrom(now);
         newAccountTermAndPreClosure.updateAccountReference(rdAccount);

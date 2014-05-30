@@ -130,6 +130,10 @@ public class SavingsEnumerations {
                 optionData = new SavingsAccountTransactionEnumData(SavingsAccountTransactionType.WITHDRAWAL_FEE.getValue().longValue(),
                         SavingsAccountTransactionType.WITHDRAWAL_FEE.getCode(), "Withdrawal fee");
             break;
+            case DEPOSIT_FEE:
+                optionData = new SavingsAccountTransactionEnumData(SavingsAccountTransactionType.DEPOSIT_FEE.getValue().longValue(),
+                        SavingsAccountTransactionType.DEPOSIT_FEE.getCode(), "Deposit fee");
+            break;
             case ANNUAL_FEE:
                 optionData = new SavingsAccountTransactionEnumData(SavingsAccountTransactionType.ANNUAL_FEE.getValue().longValue(),
                         SavingsAccountTransactionType.ANNUAL_FEE.getCode(), "Annual fee");

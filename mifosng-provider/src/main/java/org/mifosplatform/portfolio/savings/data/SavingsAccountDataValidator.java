@@ -11,6 +11,7 @@ import static org.mifosplatform.portfolio.savings.SavingsApiConstants.amountPara
 import static org.mifosplatform.portfolio.savings.SavingsApiConstants.chargeIdParamName;
 import static org.mifosplatform.portfolio.savings.SavingsApiConstants.chargesParamName;
 import static org.mifosplatform.portfolio.savings.SavingsApiConstants.clientIdParamName;
+import static org.mifosplatform.portfolio.savings.SavingsApiConstants.depositFeeForTransfersParamName;
 import static org.mifosplatform.portfolio.savings.SavingsApiConstants.externalIdParamName;
 import static org.mifosplatform.portfolio.savings.SavingsApiConstants.feeIntervalParamName;
 import static org.mifosplatform.portfolio.savings.SavingsApiConstants.feeOnMonthDayParamName;
@@ -185,6 +186,13 @@ public class SavingsAccountDataValidator {
             final Boolean isWithdrawalFeeApplicableForTransfers = this.fromApiJsonHelper.extractBooleanNamed(
                     withdrawalFeeForTransfersParamName, element);
             baseDataValidator.reset().parameter(withdrawalFeeForTransfersParamName).value(isWithdrawalFeeApplicableForTransfers)
+                    .ignoreIfNull().validateForBooleanValue();
+        }
+        
+        if (this.fromApiJsonHelper.parameterExists(depositFeeForTransfersParamName, element)) {
+            final Boolean isDepositFeeApplicableForTransfers = this.fromApiJsonHelper.extractBooleanNamed(
+                    depositFeeForTransfersParamName, element);
+            baseDataValidator.reset().parameter(depositFeeForTransfersParamName).value(isDepositFeeApplicableForTransfers)
                     .ignoreIfNull().validateForBooleanValue();
         }
 
@@ -364,6 +372,13 @@ public class SavingsAccountDataValidator {
             final Boolean isWithdrawalFeeApplicableForTransfers = this.fromApiJsonHelper.extractBooleanNamed(
                     withdrawalFeeForTransfersParamName, element);
             baseDataValidator.reset().parameter(withdrawalFeeForTransfersParamName).value(isWithdrawalFeeApplicableForTransfers)
+                    .ignoreIfNull().validateForBooleanValue();
+        }
+        
+        if (this.fromApiJsonHelper.parameterExists(depositFeeForTransfersParamName, element)) {
+            final Boolean isDepositFeeApplicableForTransfers = this.fromApiJsonHelper.extractBooleanNamed(
+                    depositFeeForTransfersParamName, element);
+            baseDataValidator.reset().parameter(depositFeeForTransfersParamName).value(isDepositFeeApplicableForTransfers)
                     .ignoreIfNull().validateForBooleanValue();
         }
 

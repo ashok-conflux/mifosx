@@ -21,6 +21,7 @@ import static org.mifosplatform.portfolio.savings.SavingsApiConstants.minRequire
 import static org.mifosplatform.portfolio.savings.SavingsApiConstants.nameParamName;
 import static org.mifosplatform.portfolio.savings.SavingsApiConstants.nominalAnnualInterestRateParamName;
 import static org.mifosplatform.portfolio.savings.SavingsApiConstants.withdrawalFeeForTransfersParamName;
+import static org.mifosplatform.portfolio.savings.SavingsApiConstants.depositFeeForTransfersParamName;
 import static org.mifosplatform.portfolio.savings.SavingsApiConstants.shortNameParamName;
 import static org.mifosplatform.portfolio.savings.SavingsApiConstants.allowOverdraftParamName;
 import static org.mifosplatform.portfolio.savings.SavingsApiConstants.overdraftLimitParamName;
@@ -109,6 +110,11 @@ public class SavingsProductAssembler {
         if (command.parameterExists(withdrawalFeeForTransfersParamName)) {
             iswithdrawalFeeApplicableForTransfer = command.booleanPrimitiveValueOfParameterNamed(withdrawalFeeForTransfersParamName);
         }
+        
+        boolean isDepositFeeApplicableForTransfer = false;
+        if (command.parameterExists(depositFeeForTransfersParamName)) {
+            isDepositFeeApplicableForTransfer = command.booleanPrimitiveValueOfParameterNamed(depositFeeForTransfersParamName);
+        }
 
         final AccountingRuleType accountingRuleType = AccountingRuleType.fromInt(command.integerValueOfParameterNamed("accountingRule"));
 
@@ -124,7 +130,7 @@ public class SavingsProductAssembler {
 
         return SavingsProduct.createNew(name, shortName, description, currency, interestRate, interestCompoundingPeriodType,
                 interestPostingPeriodType, interestCalculationType, interestCalculationDaysInYearType, minRequiredOpeningBalance,
-                lockinPeriodFrequency, lockinPeriodFrequencyType, iswithdrawalFeeApplicableForTransfer, accountingRuleType, charges,
+                lockinPeriodFrequency, lockinPeriodFrequencyType, iswithdrawalFeeApplicableForTransfer, isDepositFeeApplicableForTransfer, accountingRuleType, charges,
                 allowOverdraft, overdraftLimit);
     }
 

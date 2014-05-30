@@ -12,16 +12,18 @@ public class SavingsApplicationTestBuilder {
 
     public String build(final String ID, final String savingsProductId, final String accountType) {
 
-        final HashMap<String, String> map = new HashMap<String, String>();
+        final HashMap<String, Object> map = new HashMap<String, Object>();
         map.put("dateFormat", "dd MMMM yyyy");
         if (accountType == "GROUP") {
             map.put("groupId", ID);
         } else {
             map.put("clientId", ID);
-        }        
+        }
         map.put("productId", savingsProductId);
         map.put("locale", LOCALE);
         map.put("submittedOnDate", this.submittedOnDate);
+        map.put("depositFeeForTransfers", true);
+        map.put("withdrawalFeeForTransfers", true);
         String savingsApplicationJSON = new Gson().toJson(map);
         System.out.println(savingsApplicationJSON);
         return savingsApplicationJSON;

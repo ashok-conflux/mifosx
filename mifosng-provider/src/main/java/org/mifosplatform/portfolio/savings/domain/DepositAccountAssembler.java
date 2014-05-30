@@ -22,6 +22,7 @@ import static org.mifosplatform.portfolio.savings.DepositsApiConstants.mandatory
 import static org.mifosplatform.portfolio.savings.DepositsApiConstants.transferInterestToSavingsParamName;
 import static org.mifosplatform.portfolio.savings.SavingsApiConstants.accountNoParamName;
 import static org.mifosplatform.portfolio.savings.SavingsApiConstants.clientIdParamName;
+import static org.mifosplatform.portfolio.savings.SavingsApiConstants.depositFeeForTransfersParamName;
 import static org.mifosplatform.portfolio.savings.SavingsApiConstants.externalIdParamName;
 import static org.mifosplatform.portfolio.savings.SavingsApiConstants.fieldOfficerIdParamName;
 import static org.mifosplatform.portfolio.savings.SavingsApiConstants.groupIdParamName;
@@ -254,6 +255,11 @@ public class DepositAccountAssembler {
             iswithdrawalFeeApplicableForTransfer = command.booleanPrimitiveValueOfParameterNamed(withdrawalFeeForTransfersParamName);
         }
 
+        boolean isDepositFeeApplicableForTransfer = false;
+        if (command.parameterExists(depositFeeForTransfersParamName)) {
+            isDepositFeeApplicableForTransfer = command.booleanPrimitiveValueOfParameterNamed(depositFeeForTransfersParamName);
+        }
+
         final Set<SavingsAccountCharge> charges = this.savingsAccountChargeAssembler.fromParsedJson(element, product.currency().getCode());
 
         DepositAccountInterestRateChart accountChart = null;
@@ -280,7 +286,7 @@ public class DepositAccountAssembler {
             FixedDepositAccount fdAccount = FixedDepositAccount.createNewApplicationForSubmittal(client, group, product, fieldOfficer,
                     accountNo, externalId, accountType, submittedOnDate, submittedBy, interestRate, interestCompoundingPeriodType,
                     interestPostingPeriodType, interestCalculationType, interestCalculationDaysInYearType, minRequiredOpeningBalance,
-                    lockinPeriodFrequency, lockinPeriodFrequencyType, iswithdrawalFeeApplicableForTransfer, charges,
+                    lockinPeriodFrequency, lockinPeriodFrequencyType, iswithdrawalFeeApplicableForTransfer, isDepositFeeApplicableForTransfer, charges,
                     accountTermAndPreClosure, accountChart);
             accountTermAndPreClosure.updateAccountReference(fdAccount);
             fdAccount.validateDomainRules();
@@ -299,7 +305,7 @@ public class DepositAccountAssembler {
                     fieldOfficer, accountNo, externalId, accountType, submittedOnDate, submittedBy, interestRate,
                     interestCompoundingPeriodType, interestPostingPeriodType, interestCalculationType, interestCalculationDaysInYearType,
                     minRequiredOpeningBalance, lockinPeriodFrequency, lockinPeriodFrequencyType, iswithdrawalFeeApplicableForTransfer,
-                    charges, accountTermAndPreClosure, accountRecurringDetail, accountChart);
+                    isDepositFeeApplicableForTransfer, charges, accountTermAndPreClosure, accountRecurringDetail, accountChart);
 
             accountTermAndPreClosure.updateAccountReference(rdAccount);
             accountRecurringDetail.updateAccountReference(rdAccount);

@@ -13,6 +13,8 @@ import java.util.List;
 
 import org.joda.time.LocalDate;
 import org.joda.time.MonthDay;
+import org.mifosplatform.infrastructure.codes.data.CodeValueData;
+import org.mifosplatform.infrastructure.codes.service.CodeValueReadPlatformService;
 import org.mifosplatform.infrastructure.core.data.EnumOptionData;
 import org.mifosplatform.infrastructure.core.domain.JdbcSupport;
 import org.mifosplatform.infrastructure.core.service.RoutingDataSource;
@@ -24,6 +26,7 @@ import org.mifosplatform.portfolio.charge.exception.SavingsAccountChargeNotFound
 import org.mifosplatform.portfolio.charge.service.ChargeDropdownReadPlatformService;
 import org.mifosplatform.portfolio.charge.service.ChargeEnumerations;
 import org.mifosplatform.portfolio.common.service.DropdownReadPlatformService;
+import org.mifosplatform.portfolio.paymentdetail.PaymentDetailConstants;
 import org.mifosplatform.portfolio.savings.data.SavingsAccountAnnualFeeData;
 import org.mifosplatform.portfolio.savings.data.SavingsAccountChargeData;
 import org.mifosplatform.portfolio.savings.domain.SavingsAccountStatusType;
@@ -40,6 +43,7 @@ public class SavingsAccountChargeReadPlatformServiceImpl implements SavingsAccou
     private final PlatformSecurityContext context;
     private final ChargeDropdownReadPlatformService chargeDropdownReadPlatformService;
     private final DropdownReadPlatformService dropdownReadPlatformService;
+    private final CodeValueReadPlatformService codeValueReadPlatformService;
 
     // mappers
     private final SavingsAccountChargeDueMapper chargeDueMapper;
@@ -47,12 +51,13 @@ public class SavingsAccountChargeReadPlatformServiceImpl implements SavingsAccou
     @Autowired
     public SavingsAccountChargeReadPlatformServiceImpl(final PlatformSecurityContext context,
             final ChargeDropdownReadPlatformService chargeDropdownReadPlatformService, final RoutingDataSource dataSource,
-            final DropdownReadPlatformService dropdownReadPlatformService) {
+            final DropdownReadPlatformService dropdownReadPlatformService, final CodeValueReadPlatformService codeValueReadPlatformService) {
         this.context = context;
         this.chargeDropdownReadPlatformService = chargeDropdownReadPlatformService;
         this.jdbcTemplate = new JdbcTemplate(dataSource);
         this.chargeDueMapper = new SavingsAccountChargeDueMapper();
         this.dropdownReadPlatformService = dropdownReadPlatformService;
+        this.codeValueReadPlatformService = codeValueReadPlatformService;
     }
 
     private static final class SavingsAccountChargeMapper implements RowMapper<SavingsAccountChargeData> {
@@ -73,9 +78,9 @@ public class SavingsAccountChargeReadPlatformServiceImpl implements SavingsAccou
                     + "sc.charge_calculation_enum as chargeCalculation, "
                     + "c.currency_code as currencyCode, oc.name as currencyName, "
                     + "oc.decimal_places as currencyDecimalPlaces, oc.currency_multiplesof as inMultiplesOf, oc.display_symbol as currencyDisplaySymbol, "
-                    + "oc.internationalized_name_code as currencyNameCode from m_charge c "
-                    + "join m_organisation_currency oc on c.currency_code = oc.code "
-                    + "join m_savings_account_charge sc on sc.charge_id = c.id ";
+                    + "oc.internationalized_name_code as currencyNameCode, " + "cv.id as paymentTypeId, cv.code_value as codeValue "
+                    + "from m_charge c " + "join m_organisation_currency oc on c.currency_code = oc.code "
+                    + "join m_savings_account_charge sc on sc.charge_id = c.id " + "left join m_code_value cv on cv.id=sc.payment_type_id ";
         }
 
         @Override
@@ -122,9 +127,13 @@ public class SavingsAccountChargeReadPlatformServiceImpl implements SavingsAccou
 
             final Collection<ChargeData> chargeOptions = null;
 
+            final Long paymentTypeId = JdbcSupport.getLong(rs, "paymentTypeId");
+            final String paymentTypeCode = rs.getString("codeValue");
+            final CodeValueData paymentType = CodeValueData.instance(paymentTypeId, paymentTypeCode);
+
             return SavingsAccountChargeData.instance(id, chargeId, accountId, name, currency, amount, amountPaid, amountWaived,
                     amountWrittenOff, amountOutstanding, chargeTimeType, dueAsOfDate, chargeCalculationType, percentageOf,
-                    amountPercentageAppliedTo, chargeOptions, penalty, feeOnMonthDay, feeInterval);
+                    amountPercentageAppliedTo, chargeOptions, penalty, feeOnMonthDay, feeInterval, paymentType);
         }
     }
 
@@ -143,11 +152,12 @@ public class SavingsAccountChargeReadPlatformServiceImpl implements SavingsAccou
                 .retrieveSavingsCollectionTimeTypes();
 
         final List<EnumOptionData> feeFrequencyOptions = this.dropdownReadPlatformService.retrievePeriodFrequencyTypeOptions();
-
+        final Collection<CodeValueData> paymentTypeOptions = this.codeValueReadPlatformService
+                .retrieveCodeValuesByCode(PaymentDetailConstants.paymentTypeCodeName);
         // TODO AA : revisit for merge conflict - Not sure method signature
         return ChargeData.template(null, allowedChargeCalculationTypeOptions, null, allowedChargeTimeOptions, null,
                 loansChargeCalculationTypeOptions, loansChargeTimeTypeOptions, savingsChargeCalculationTypeOptions,
-                savingsChargeTimeTypeOptions, feeFrequencyOptions);
+                savingsChargeTimeTypeOptions, feeFrequencyOptions, paymentTypeOptions);
     }
 
     @Override

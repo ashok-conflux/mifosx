@@ -7,6 +7,7 @@ package org.mifosplatform.portfolio.savings.domain;
 
 import static org.mifosplatform.portfolio.savings.SavingsApiConstants.SAVINGS_ACCOUNT_RESOURCE_NAME;
 import static org.mifosplatform.portfolio.savings.SavingsApiConstants.allowOverdraftParamName;
+import static org.mifosplatform.portfolio.savings.SavingsApiConstants.depositFeeForTransfersParamName;
 import static org.mifosplatform.portfolio.savings.SavingsApiConstants.dueAsOfDateParamName;
 import static org.mifosplatform.portfolio.savings.SavingsApiConstants.localeParamName;
 import static org.mifosplatform.portfolio.savings.SavingsApiConstants.lockinPeriodFrequencyParamName;
@@ -55,6 +56,7 @@ import org.hibernate.annotations.LazyCollectionOption;
 import org.joda.time.LocalDate;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
+import org.mifosplatform.infrastructure.codes.domain.CodeValue;
 import org.mifosplatform.infrastructure.core.api.JsonCommand;
 import org.mifosplatform.infrastructure.core.data.ApiParameterError;
 import org.mifosplatform.infrastructure.core.data.DataValidatorBuilder;
@@ -69,6 +71,7 @@ import org.mifosplatform.organisation.office.domain.Office;
 import org.mifosplatform.organisation.staff.domain.Staff;
 import org.mifosplatform.portfolio.accountdetails.domain.AccountType;
 import org.mifosplatform.portfolio.charge.domain.Charge;
+import org.mifosplatform.portfolio.charge.domain.PaymentTypeCharge;
 import org.mifosplatform.portfolio.charge.exception.SavingsAccountChargeNotFoundException;
 import org.mifosplatform.portfolio.client.domain.Client;
 import org.mifosplatform.portfolio.common.domain.PeriodFrequencyType;
@@ -233,6 +236,9 @@ public class SavingsAccount extends AbstractPersistable<Long> {
     @Column(name = "withdrawal_fee_for_transfer", nullable = true)
     protected boolean withdrawalFeeApplicableForTransfer;
 
+    @Column(name = "deposit_fee_for_transfer", nullable = true)
+    protected boolean depositFeeApplicableForTransfer;
+
     @Column(name = "allow_overdraft")
     private boolean allowOverdraft;
 
@@ -272,14 +278,14 @@ public class SavingsAccount extends AbstractPersistable<Long> {
             final SavingsPostingInterestPeriodType interestPostingPeriodType, final SavingsInterestCalculationType interestCalculationType,
             final SavingsInterestCalculationDaysInYearType interestCalculationDaysInYearType, final BigDecimal minRequiredOpeningBalance,
             final Integer lockinPeriodFrequency, final SavingsPeriodFrequencyType lockinPeriodFrequencyType,
-            final boolean withdrawalFeeApplicableForTransfer, final Set<SavingsAccountCharge> savingsAccountCharges,
-            final boolean allowOverdraft, final BigDecimal overdraftLimit) {
+            final boolean withdrawalFeeApplicableForTransfer, final boolean depositFeeApplicableForTransfer,
+            final Set<SavingsAccountCharge> savingsAccountCharges, final boolean allowOverdraft, final BigDecimal overdraftLimit) {
 
         final SavingsAccountStatusType status = SavingsAccountStatusType.SUBMITTED_AND_PENDING_APPROVAL;
         return new SavingsAccount(client, group, product, fieldOfficer, accountNo, externalId, status, accountType, submittedOnDate,
                 submittedBy, interestRate, interestCompoundingPeriodType, interestPostingPeriodType, interestCalculationType,
                 interestCalculationDaysInYearType, minRequiredOpeningBalance, lockinPeriodFrequency, lockinPeriodFrequencyType,
-                withdrawalFeeApplicableForTransfer, savingsAccountCharges, allowOverdraft, overdraftLimit);
+                withdrawalFeeApplicableForTransfer, depositFeeApplicableForTransfer, savingsAccountCharges, allowOverdraft, overdraftLimit);
     }
 
     protected SavingsAccount(final Client client, final Group group, final SavingsProduct product, final Staff fieldOfficer,
@@ -289,8 +295,8 @@ public class SavingsAccount extends AbstractPersistable<Long> {
             final SavingsPostingInterestPeriodType interestPostingPeriodType, final SavingsInterestCalculationType interestCalculationType,
             final SavingsInterestCalculationDaysInYearType interestCalculationDaysInYearType, final BigDecimal minRequiredOpeningBalance,
             final Integer lockinPeriodFrequency, final SavingsPeriodFrequencyType lockinPeriodFrequencyType,
-            final boolean withdrawalFeeApplicableForTransfer, final Set<SavingsAccountCharge> savingsAccountCharges,
-            final boolean allowOverdraft, final BigDecimal overdraftLimit) {
+            final boolean withdrawalFeeApplicableForTransfer, final boolean depositFeeApplicableForTransfer,
+            final Set<SavingsAccountCharge> savingsAccountCharges, final boolean allowOverdraft, final BigDecimal overdraftLimit) {
         this.client = client;
         this.group = group;
         this.product = product;
@@ -319,6 +325,7 @@ public class SavingsAccount extends AbstractPersistable<Long> {
             this.lockinPeriodFrequencyType = lockinPeriodFrequencyType.getValue();
         }
         this.withdrawalFeeApplicableForTransfer = withdrawalFeeApplicableForTransfer;
+        this.depositFeeApplicableForTransfer = depositFeeApplicableForTransfer;
 
         if (!CollectionUtils.isEmpty(savingsAccountCharges)) {
             this.charges = associateChargesWithThisSavingsAccount(savingsAccountCharges);
@@ -607,7 +614,7 @@ public class SavingsAccount extends AbstractPersistable<Long> {
         }
     }
 
-    public SavingsAccountTransaction deposit(final SavingsAccountTransactionDTO transactionDTO) {
+    public SavingsAccountTransaction deposit(final SavingsAccountTransactionDTO transactionDTO, final boolean applyDepositFee) {
         final String resourceTypeName = depositAccountType().resourceName();
         if (isNotActive()) {
             final String defaultUserMessage = "Transaction is not allowed. Account is not active.";
@@ -652,6 +659,11 @@ public class SavingsAccount extends AbstractPersistable<Long> {
         final SavingsAccountTransaction transaction = SavingsAccountTransaction.deposit(this, office(), transactionDTO.getPaymentDetail(),
                 transactionDTO.getTransactionDate(), amount, transactionDTO.getCreatedDate());
         this.transactions.add(transaction);
+
+        if (applyDepositFee) {
+            // auto pay withdrawal fee
+            payAppliedDepositFees(transactionDTO.getTransactionAmount(), transactionDTO.getTransactionDate(), transaction);
+        }
 
         this.summary.updateSummary(this.currency, this.savingsAccountTransactionSummaryWrapper, this.transactions);
 
@@ -727,16 +739,27 @@ public class SavingsAccount extends AbstractPersistable<Long> {
 
         if (applyWithdrawFee) {
             // auto pay withdrawal fee
-            payWithdrawalFee(transactionDTO.getTransactionAmount(), transactionDTO.getTransactionDate());
+            payAppliedWithdrawalFees(transactionDTO.getTransactionAmount(), transactionDTO.getTransactionDate(), transaction);
         }
         return transaction;
     }
 
-    private void payWithdrawalFee(final BigDecimal transactionAmoount, final LocalDate transactionDate) {
-        for (SavingsAccountCharge charge : this.charges()) {
-            if (charge.isWithdrawalFee()) {
-                charge.updateWithdralFeeAmount(transactionAmoount);
-                this.payCharge(charge, charge.getAmountOutstanding(this.getCurrency()), transactionDate);
+    /**
+     * Pay all applied withdrawal fees to savings account. Exclude Charges which
+     * are linked to a payment type.
+     * 
+     * @param transactionAmoount
+     * @param transactionDate
+     * @param parent
+     */
+    private void payAppliedWithdrawalFees(final BigDecimal transactionAmoount, final LocalDate transactionDate,
+            final SavingsAccountTransaction parent) {
+        for (SavingsAccountCharge savingsAccountcharge : this.charges()) {
+            // Exclude charges which are linked to a payment type
+            if (savingsAccountcharge.isWithdrawalFee() && !savingsAccountcharge.isApplicableOnlyForPaymentType()) {
+                savingsAccountcharge.updateRecurringFeeAmount(transactionAmoount);
+                this.handlePayChargeTransactions(savingsAccountcharge, savingsAccountcharge.getAmountOutstanding(this.getCurrency()),
+                        transactionDate, parent);
             }
         }
     }
@@ -973,6 +996,12 @@ public class SavingsAccount extends AbstractPersistable<Long> {
             this.withdrawalFeeApplicableForTransfer = newValue;
         }
 
+        if (command.isChangeInBooleanParameterNamed(depositFeeForTransfersParamName, this.depositFeeApplicableForTransfer)) {
+            final boolean newValue = command.booleanPrimitiveValueOfParameterNamed(depositFeeForTransfersParamName);
+            actualChanges.put(depositFeeForTransfersParamName, newValue);
+            this.depositFeeApplicableForTransfer = newValue;
+        }
+
         // charges
         final String chargesParamName = "charges";
         if (command.hasParameter(chargesParamName)) {
@@ -1003,13 +1032,6 @@ public class SavingsAccount extends AbstractPersistable<Long> {
     }
 
     private void validateLockinDetails(final DataValidatorBuilder baseDataValidator) {
-
-        /*
-         * final List<ApiParameterError> dataValidationErrors = new
-         * ArrayList<ApiParameterError>(); final DataValidatorBuilder
-         * baseDataValidator = new DataValidatorBuilder(dataValidationErrors)
-         * .resource(resourceName);
-         */
 
         if (this.lockinPeriodFrequency == null) {
             baseDataValidator.reset().parameter(lockinPeriodFrequencyTypeParamName).value(this.lockinPeriodFrequencyType).ignoreIfNull()
@@ -1595,10 +1617,12 @@ public class SavingsAccount extends AbstractPersistable<Long> {
 
     private void payActivationCharges() {
         boolean isSavingsChargeApplied = false;
+        final SavingsAccountTransaction parent = null;
         for (SavingsAccountCharge savingsAccountCharge : this.charges()) {
             if (savingsAccountCharge.isSavingsActivation()) {
                 isSavingsChargeApplied = true;
-                payCharge(savingsAccountCharge, savingsAccountCharge.getAmountOutstanding(getCurrency()), getActivationLocalDate());
+                handlePayChargeTransactions(savingsAccountCharge, savingsAccountCharge.getAmountOutstanding(getCurrency()),
+                        getActivationLocalDate(), parent);
             }
         }
 
@@ -1716,6 +1740,10 @@ public class SavingsAccount extends AbstractPersistable<Long> {
 
     public boolean isWithdrawalFeeApplicableForTransfer() {
         return this.withdrawalFeeApplicableForTransfer;
+    }
+
+    public boolean isDepositFeeApplicableForTransfer() {
+        return this.depositFeeApplicableForTransfer;
     }
 
     public void activateAccountBasedOnBalance() {
@@ -1856,12 +1884,13 @@ public class SavingsAccount extends AbstractPersistable<Long> {
         }
 
         // Only one withdrawal fee is supported per account
-        if (savingsAccountCharge.isWithdrawalFee()) {
-            if (this.isWithDrawalFeeExists()) {
-                baseDataValidator.reset().failWithCodeNoParameterAddedToErrorCode("multiple.withdrawal.fee.per.account.not.supported");
-                throw new PlatformApiDataValidationException(dataValidationErrors);
-            }
-        }
+        /*
+         * if (savingsAccountCharge.isWithdrawalFee()) { if
+         * (this.isWithDrawalFeeExists()) {
+         * baseDataValidator.reset().failWithCodeNoParameterAddedToErrorCode
+         * ("multiple.withdrawal.fee.per.account.not.supported"); throw new
+         * PlatformApiDataValidationException(dataValidationErrors); } }
+         */
 
         // Only one annual fee is supported per account
         if (savingsAccountCharge.isAnnualFee()) {
@@ -1891,12 +1920,11 @@ public class SavingsAccount extends AbstractPersistable<Long> {
 
     }
 
-    private boolean isWithDrawalFeeExists() {
-        for (SavingsAccountCharge charge : this.charges()) {
-            if (charge.isWithdrawalFee()) return true;
-        }
-        return false;
-    }
+    /*
+     * private boolean isWithDrawalFeeExists() { for (SavingsAccountCharge
+     * charge : this.charges()) { if (charge.isWithdrawalFee()) return true; }
+     * return false; }
+     */
 
     private boolean isAnnualFeeExists() {
         for (SavingsAccountCharge charge : this.charges()) {
@@ -1906,7 +1934,7 @@ public class SavingsAccount extends AbstractPersistable<Long> {
     }
 
     public void payCharge(final SavingsAccountCharge savingsAccountCharge, final BigDecimal amountPaid, final LocalDate transactionDate,
-            final DateTimeFormatter formatter) {
+            final DateTimeFormatter formatter, final SavingsAccountTransaction parent) {
 
         final List<ApiParameterError> dataValidationErrors = new ArrayList<ApiParameterError>();
         final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors)
@@ -1976,24 +2004,24 @@ public class SavingsAccount extends AbstractPersistable<Long> {
             if (!dataValidationErrors.isEmpty()) { throw new PlatformApiDataValidationException(dataValidationErrors); }
         }
 
-        this.payCharge(savingsAccountCharge, chargePaid, transactionDate);
-    }
-
-    public void payCharge(final SavingsAccountCharge savingsAccountCharge, final Money amountPaid, final LocalDate transactionDate) {
-        savingsAccountCharge.pay(getCurrency(), amountPaid);
-        handlePayChargeTransactions(savingsAccountCharge, amountPaid, transactionDate);
+        this.handlePayChargeTransactions(savingsAccountCharge, chargePaid, transactionDate, parent);
     }
 
     private void handlePayChargeTransactions(SavingsAccountCharge savingsAccountCharge, Money transactionAmount,
-            final LocalDate transactionDate) {
+            final LocalDate transactionDate, final SavingsAccountTransaction parent) {
+
+        savingsAccountCharge.pay(getCurrency(), transactionAmount);
+
         SavingsAccountTransaction chargeTransaction = null;
 
         if (savingsAccountCharge.isWithdrawalFee()) {
-            chargeTransaction = SavingsAccountTransaction.withdrawalFee(this, office(), transactionDate, transactionAmount);
+            chargeTransaction = SavingsAccountTransaction.withdrawalFee(this, office(), transactionDate, transactionAmount, parent);
         } else if (savingsAccountCharge.isAnnualFee()) {
-            chargeTransaction = SavingsAccountTransaction.annualFee(this, office(), transactionDate, transactionAmount);
+            chargeTransaction = SavingsAccountTransaction.annualFee(this, office(), transactionDate, transactionAmount, parent);
+        } else if (savingsAccountCharge.isDepositFee()) {
+            chargeTransaction = SavingsAccountTransaction.depositFee(this, office(), transactionDate, transactionAmount, parent);
         } else {
-            chargeTransaction = SavingsAccountTransaction.charge(this, office(), transactionDate, transactionAmount);
+            chargeTransaction = SavingsAccountTransaction.charge(this, office(), transactionDate, transactionAmount, parent);
         }
 
         handleChargeTransactions(savingsAccountCharge, chargeTransaction);
@@ -2068,7 +2096,100 @@ public class SavingsAccount extends AbstractPersistable<Long> {
     public boolean accountSubmittedAndActivationOnSameDate() {
         if (getSubmittedOnLocalDate() == null || getActivationLocalDate() == null) { return false; }
         return getActivationLocalDate().isEqual(getSubmittedOnLocalDate());
+    }
 
+    /**
+     * Pay all applied deposit fees to savings account. Exclude Charges which
+     * are linked to a payment type.
+     * 
+     * @param transactionAmount
+     * @param transactionDate
+     * @param parent
+     */
+    private void payAppliedDepositFees(final BigDecimal transactionAmount, final LocalDate transactionDate,
+            final SavingsAccountTransaction parent) {
+        for (SavingsAccountCharge savingsAccountCharge : this.charges()) {
+            // Exclude charges which are linked to a payment type
+            if (savingsAccountCharge.isDepositFee() && !savingsAccountCharge.isApplicableOnlyForPaymentType()) {
+                savingsAccountCharge.updateRecurringFeeAmount(transactionAmount);
+                this.handlePayChargeTransactions(savingsAccountCharge, savingsAccountCharge.getAmountOutstanding(this.getCurrency()),
+                        transactionDate, parent);
+            }
+        }
+    }
+
+    /**
+     * Add a linked deposit/withdrawal charge and pay the charge amount.
+     * 
+     * @param parent
+     *            Parent transaction to be linked
+     * @param paymentTypeCharges
+     * @param transactionAmount
+     *            Deposit/Withdrawal transaction amount
+     */
+    public void addAndPayChargesLinkedWithPaymentType(final SavingsAccountTransaction parent,
+            final Collection<PaymentTypeCharge> paymentTypeCharges, final BigDecimal transactionAmount) {
+        for (PaymentTypeCharge paymentTypeCharge : paymentTypeCharges) {
+            SavingsAccountCharge accountCharge = null;
+            final Charge charge = paymentTypeCharge.charge();
+            // only the charges which are applied for all products will be
+            // charged
+            if (charge.isApplicableForPaymentTypes()) {
+
+                // retrieve charge from savings account if it's already added
+                accountCharge = findLinkedCharge(charge, paymentTypeCharge.paymentType());
+
+                // if charge is not yet added
+                if (accountCharge == null) {
+                    // add charge only if applicable to all savings products
+                    if (charge.isApplicableToAllProducts()) {
+                        accountCharge = SavingsAccountCharge.createFromPaymentTypeCharge(this, paymentTypeCharge);
+                        this.charges().add(accountCharge);
+                    }
+                }
+
+                // charge might have added separately to savings account
+                // Or added during applying linked charges
+                if (accountCharge != null && (accountCharge.isDepositFee() || accountCharge.isWithdrawalFee())) {
+
+                    /**
+                     * pay charge if applicable to all products
+                     * charge.isApplicableToAllProducts()
+                     */
+
+                    /**
+                     * AND
+                     * 
+                     * pay charge if not applicable to all products but added to
+                     * savings account !charge.isApplicableToAllProducts() &&
+                     * !accountCharge.isApplicableToAllProducts() - added
+                     * separately to savings account
+                     */
+
+                    if (charge.isApplicableToAllProducts()
+                            || (!charge.isApplicableToAllProducts() && !accountCharge.isApplicableToAllProducts())) {
+
+                        accountCharge.updateCalculationTypeAndAmount(paymentTypeCharge.amount(), paymentTypeCharge.chargeCalculationType());
+                        accountCharge.updateRecurringFeeAmount(transactionAmount);
+                        this.handlePayChargeTransactions(accountCharge, accountCharge.getAmountOutstanding(this.getCurrency()),
+                                parent.transactionLocalDate(), parent);
+                    }
+                }
+
+            }
+        }
+        this.summary.updateSummary(this.currency, this.savingsAccountTransactionSummaryWrapper, this.transactions);
+    }
+
+    public SavingsAccountCharge findLinkedCharge(final Charge charge, final CodeValue paymentType) {
+        SavingsAccountCharge foundAccountCharge = null;
+        for (SavingsAccountCharge accountCharge : this.charges()) {
+            if (accountCharge.getCharge().getId().equals(charge.getId()) && accountCharge.paymentType().getId().equals(paymentType.getId())) {
+                foundAccountCharge = accountCharge;
+                break;
+            }
+        }
+        return foundAccountCharge;
     }
 
     public void validateInterestPostingAndCompoundingPeriodTypes(final DataValidatorBuilder baseDataValidator) {

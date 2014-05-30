@@ -26,6 +26,7 @@ import static org.mifosplatform.portfolio.savings.SavingsApiConstants.nominalAnn
 import static org.mifosplatform.portfolio.savings.SavingsApiConstants.overdraftLimitParamName;
 import static org.mifosplatform.portfolio.savings.SavingsApiConstants.shortNameParamName;
 import static org.mifosplatform.portfolio.savings.SavingsApiConstants.withdrawalFeeForTransfersParamName;
+import static org.mifosplatform.portfolio.savings.SavingsApiConstants.depositFeeForTransfersParamName;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -69,9 +70,9 @@ import com.google.gson.JsonArray;
 
 @Entity
 @Table(name = "m_savings_product", uniqueConstraints = { @UniqueConstraint(columnNames = { "name" }, name = "sp_unq_name"),
-        @UniqueConstraint(columnNames = { "short_name" }, name = "sp_unq_short_name")})
+        @UniqueConstraint(columnNames = { "short_name" }, name = "sp_unq_short_name") })
 @Inheritance
-@DiscriminatorColumn(name="deposit_type_enum", discriminatorType=DiscriminatorType.INTEGER)
+@DiscriminatorColumn(name = "deposit_type_enum", discriminatorType = DiscriminatorType.INTEGER)
 @DiscriminatorValue("100")
 public class SavingsProduct extends AbstractPersistable<Long> {
 
@@ -137,6 +138,9 @@ public class SavingsProduct extends AbstractPersistable<Long> {
     @Column(name = "withdrawal_fee_for_transfer")
     protected boolean withdrawalFeeApplicableForTransfer;
 
+    @Column(name = "deposit_fee_for_transfer")
+    protected boolean depositFeeApplicableForTransfer;
+
     @ManyToMany
     @JoinTable(name = "m_savings_product_charge", joinColumns = @JoinColumn(name = "savings_product_id"), inverseJoinColumns = @JoinColumn(name = "charge_id"))
     protected Set<Charge> charges;
@@ -153,13 +157,14 @@ public class SavingsProduct extends AbstractPersistable<Long> {
             final SavingsPostingInterestPeriodType interestPostingPeriodType, final SavingsInterestCalculationType interestCalculationType,
             final SavingsInterestCalculationDaysInYearType interestCalculationDaysInYearType, final BigDecimal minRequiredOpeningBalance,
             final Integer lockinPeriodFrequency, final SavingsPeriodFrequencyType lockinPeriodFrequencyType,
-            final boolean withdrawalFeeApplicableForTransfer, final AccountingRuleType accountingRuleType, final Set<Charge> charges,
-            final boolean allowOverdraft, final BigDecimal overdraftLimit) {
+            final boolean withdrawalFeeApplicableForTransfer, final boolean depositFeeApplicableForTransfer,
+            final AccountingRuleType accountingRuleType, final Set<Charge> charges, final boolean allowOverdraft,
+            final BigDecimal overdraftLimit) {
 
         return new SavingsProduct(name, shortName, description, currency, interestRate, interestCompoundingPeriodType,
                 interestPostingPeriodType, interestCalculationType, interestCalculationDaysInYearType, minRequiredOpeningBalance,
-                lockinPeriodFrequency, lockinPeriodFrequencyType, withdrawalFeeApplicableForTransfer, accountingRuleType, charges,
-                allowOverdraft, overdraftLimit);
+                lockinPeriodFrequency, lockinPeriodFrequencyType, withdrawalFeeApplicableForTransfer, depositFeeApplicableForTransfer,
+                accountingRuleType, charges, allowOverdraft, overdraftLimit);
     }
 
     protected SavingsProduct() {
@@ -167,13 +172,14 @@ public class SavingsProduct extends AbstractPersistable<Long> {
         this.description = null;
     }
 
-    protected SavingsProduct(final String name, final String shortName, final String description, final MonetaryCurrency currency, final BigDecimal interestRate,
-            final SavingsCompoundingInterestPeriodType interestCompoundingPeriodType,
+    protected SavingsProduct(final String name, final String shortName, final String description, final MonetaryCurrency currency,
+            final BigDecimal interestRate, final SavingsCompoundingInterestPeriodType interestCompoundingPeriodType,
             final SavingsPostingInterestPeriodType interestPostingPeriodType, final SavingsInterestCalculationType interestCalculationType,
             final SavingsInterestCalculationDaysInYearType interestCalculationDaysInYearType, final BigDecimal minRequiredOpeningBalance,
             final Integer lockinPeriodFrequency, final SavingsPeriodFrequencyType lockinPeriodFrequencyType,
-            final boolean withdrawalFeeApplicableForTransfer, final AccountingRuleType accountingRuleType, final Set<Charge> charges,
-            final boolean allowOverdraft, final BigDecimal overdraftLimit) {
+            final boolean withdrawalFeeApplicableForTransfer, final boolean depositFeeApplicableForTransfer,
+            final AccountingRuleType accountingRuleType, final Set<Charge> charges, final boolean allowOverdraft,
+            final BigDecimal overdraftLimit) {
 
         this.name = name;
         this.shortName = shortName;
@@ -196,6 +202,7 @@ public class SavingsProduct extends AbstractPersistable<Long> {
         }
 
         this.withdrawalFeeApplicableForTransfer = withdrawalFeeApplicableForTransfer;
+        this.depositFeeApplicableForTransfer = depositFeeApplicableForTransfer;
 
         if (accountingRuleType != null) {
             this.accountingRule = accountingRuleType.getValue();
@@ -364,6 +371,12 @@ public class SavingsProduct extends AbstractPersistable<Long> {
             this.withdrawalFeeApplicableForTransfer = newValue;
         }
 
+        if (command.isChangeInBooleanParameterNamed(depositFeeForTransfersParamName, this.depositFeeApplicableForTransfer)) {
+            final boolean newValue = command.booleanPrimitiveValueOfParameterNamed(depositFeeForTransfersParamName);
+            actualChanges.put(depositFeeForTransfersParamName, newValue);
+            this.depositFeeApplicableForTransfer = newValue;
+        }
+
         if (command.isChangeInIntegerParameterNamed(accountingRuleParamName, this.accountingRule)) {
             final Integer newValue = command.integerValueOfParameterNamed(accountingRuleParamName);
             actualChanges.put(accountingRuleParamName, newValue);
@@ -472,6 +485,10 @@ public class SavingsProduct extends AbstractPersistable<Long> {
         return this.withdrawalFeeApplicableForTransfer;
     }
 
+    public boolean isDepositFeeApplicableForTransfer() {
+        return this.depositFeeApplicableForTransfer;
+    }
+
     public boolean isAllowOverdraft() {
         return this.allowOverdraft;
     }
@@ -479,13 +496,13 @@ public class SavingsProduct extends AbstractPersistable<Long> {
     public Set<Charge> charges() {
         return this.charges;
     }
-    
-    public InterestRateChart applicableChart(@SuppressWarnings("unused") final LocalDate target){
+
+    public InterestRateChart applicableChart(@SuppressWarnings("unused") final LocalDate target) {
         return null;
     }
-    
+
     public InterestRateChart findChart(@SuppressWarnings("unused") Long chartId) {
         return null;
     }
- 
+
 }

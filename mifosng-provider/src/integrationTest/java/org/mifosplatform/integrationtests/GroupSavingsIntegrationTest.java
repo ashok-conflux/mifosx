@@ -372,8 +372,8 @@ public class GroupSavingsIntegrationTest {
         HashMap savingsStatusHashMap = SavingsStatusChecker.getStatusOfSavings(this.requestSpec, this.responseSpec, savingsId);
         SavingsStatusChecker.verifySavingsIsPending(savingsStatusHashMap);
 
-        final Integer withdrawalChargeId = ChargesHelper.createCharges(this.requestSpec, this.responseSpec,
-                ChargesHelper.getSavingsWithdrawalFeeJSON());
+        final Integer withdrawalChargeId = (Integer) ChargesHelper.createCharges(this.requestSpec, this.responseSpec,
+                ChargesHelper.getSavingsWithdrawalFeeJSON(), CommonConstants.RESPONSE_RESOURCE_ID);
         Assert.assertNotNull(withdrawalChargeId);
 
         this.savingsAccountHelper.addChargesForSavings(savingsId, withdrawalChargeId);
@@ -396,7 +396,8 @@ public class GroupSavingsIntegrationTest {
         savingsStatusHashMap = this.savingsAccountHelper.activateSavings(savingsId);
         SavingsStatusChecker.verifySavingsIsActive(savingsStatusHashMap);
 
-        final Integer chargeId = ChargesHelper.createCharges(this.requestSpec, this.responseSpec, ChargesHelper.getSavingsAnnualFeeJSON());
+        final Integer chargeId = (Integer) ChargesHelper.createCharges(this.requestSpec, this.responseSpec,
+                ChargesHelper.getSavingsAnnualFeeJSON(), CommonConstants.RESPONSE_RESOURCE_ID);
         Assert.assertNotNull(chargeId);
 
         ArrayList<HashMap> charges = this.savingsAccountHelper.getSavingsCharges(savingsId);
@@ -419,8 +420,8 @@ public class GroupSavingsIntegrationTest {
         HashMap paidCharge = this.savingsAccountHelper.getSavingsCharge(savingsId, (Integer) savingsChargeForPay.get("id"));
         assertEquals(savingsChargeForPay.get("amount"), paidCharge.get("amountPaid"));
 
-        final Integer monthlyFeechargeId = ChargesHelper.createCharges(this.requestSpec, this.responseSpec,
-                ChargesHelper.getSavingsMonthlyFeeJSON());
+        final Integer monthlyFeechargeId = (Integer) ChargesHelper.createCharges(this.requestSpec, this.responseSpec,
+                ChargesHelper.getSavingsMonthlyFeeJSON(), CommonConstants.RESPONSE_RESOURCE_ID);
         Assert.assertNotNull(monthlyFeechargeId);
 
         this.savingsAccountHelper.addChargesForSavings(savingsId, monthlyFeechargeId);

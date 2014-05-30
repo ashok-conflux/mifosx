@@ -57,13 +57,14 @@ public class RecurringDepositProduct extends FixedDepositProduct {
 
         final BigDecimal minRequiredOpeningBalance = null;
         final boolean withdrawalFeeApplicableForTransfer = false;
+        final boolean depositFeeApplicableForTransfer = false;
         final boolean allowOverdraft = false;
         final BigDecimal overdraftLimit = null;
 
         return new RecurringDepositProduct(name, shortName, description, currency, interestRate, interestCompoundingPeriodType,
                 interestPostingPeriodType, interestCalculationType, interestCalculationDaysInYearType, minRequiredOpeningBalance,
-                lockinPeriodFrequency, lockinPeriodFrequencyType, withdrawalFeeApplicableForTransfer, accountingRuleType, charges,
-                productTermAndPreClosure, recurringDetail, charts, allowOverdraft, overdraftLimit);
+                lockinPeriodFrequency, lockinPeriodFrequencyType, withdrawalFeeApplicableForTransfer, depositFeeApplicableForTransfer,
+                accountingRuleType, charges, productTermAndPreClosure, recurringDetail, charts, allowOverdraft, overdraftLimit);
     }
 
     protected RecurringDepositProduct(final String name, final String shortName, final String description, final MonetaryCurrency currency,
@@ -71,14 +72,15 @@ public class RecurringDepositProduct extends FixedDepositProduct {
             final SavingsPostingInterestPeriodType interestPostingPeriodType, final SavingsInterestCalculationType interestCalculationType,
             final SavingsInterestCalculationDaysInYearType interestCalculationDaysInYearType, final BigDecimal minRequiredOpeningBalance,
             final Integer lockinPeriodFrequency, final SavingsPeriodFrequencyType lockinPeriodFrequencyType,
-            final boolean withdrawalFeeApplicableForTransfer, final AccountingRuleType accountingRuleType, final Set<Charge> charges,
+            final boolean withdrawalFeeApplicableForTransfer, final boolean depositFeeApplicableForTransfer,
+            final AccountingRuleType accountingRuleType, final Set<Charge> charges,
             final DepositProductTermAndPreClosure productTermAndPreClosure, final DepositProductRecurringDetail recurringDetail,
             final Set<InterestRateChart> charts, final boolean allowOverdraft, final BigDecimal overdraftLimit) {
 
         super(name, shortName, description, currency, interestRate, interestCompoundingPeriodType, interestPostingPeriodType,
                 interestCalculationType, interestCalculationDaysInYearType, minRequiredOpeningBalance, lockinPeriodFrequency,
-                lockinPeriodFrequencyType, withdrawalFeeApplicableForTransfer, accountingRuleType, charges, productTermAndPreClosure,
-                charts, allowOverdraft, overdraftLimit);
+                lockinPeriodFrequencyType, withdrawalFeeApplicableForTransfer, depositFeeApplicableForTransfer, accountingRuleType,
+                charges, productTermAndPreClosure, charts, allowOverdraft, overdraftLimit);
 
         this.recurringDetail = recurringDetail;
     }
@@ -147,7 +149,7 @@ public class RecurringDepositProduct extends FixedDepositProduct {
             baseDataValidator.reset().parameter(DepositsApiConstants.nominalAnnualInterestRateParamName).value(nominalAnnualInterestRate)
                     .failWithCodeNoParameterAddedToErrorCode("interest.chart.or.nominal.interest.rate.required");
         }
-        
+
         this.validateInterestPostingAndCompoundingPeriodTypes(baseDataValidator);
     }
 }

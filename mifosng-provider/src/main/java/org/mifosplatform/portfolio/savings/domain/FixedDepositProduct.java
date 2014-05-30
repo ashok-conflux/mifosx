@@ -79,13 +79,14 @@ public class FixedDepositProduct extends SavingsProduct {
 
         final BigDecimal minRequiredOpeningBalance = null;
         final boolean withdrawalFeeApplicableForTransfer = false;
+        final boolean depositFeeApplicableForTransfer = false;
         final boolean allowOverdraft = false;
         final BigDecimal overdraftLimit = null;
 
         return new FixedDepositProduct(name, shortName, description, currency, interestRate, interestCompoundingPeriodType,
                 interestPostingPeriodType, interestCalculationType, interestCalculationDaysInYearType, minRequiredOpeningBalance,
-                lockinPeriodFrequency, lockinPeriodFrequencyType, withdrawalFeeApplicableForTransfer, accountingRuleType, charges,
-                productTermAndPreClosure, charts, allowOverdraft, overdraftLimit);
+                lockinPeriodFrequency, lockinPeriodFrequencyType, withdrawalFeeApplicableForTransfer, depositFeeApplicableForTransfer,
+                accountingRuleType, charges, productTermAndPreClosure, charts, allowOverdraft, overdraftLimit);
     }
 
     protected FixedDepositProduct(final String name, final String shortName, final String description, final MonetaryCurrency currency,
@@ -93,13 +94,15 @@ public class FixedDepositProduct extends SavingsProduct {
             final SavingsPostingInterestPeriodType interestPostingPeriodType, final SavingsInterestCalculationType interestCalculationType,
             final SavingsInterestCalculationDaysInYearType interestCalculationDaysInYearType, final BigDecimal minRequiredOpeningBalance,
             final Integer lockinPeriodFrequency, final SavingsPeriodFrequencyType lockinPeriodFrequencyType,
-            final boolean withdrawalFeeApplicableForTransfer, final AccountingRuleType accountingRuleType, final Set<Charge> charges,
+            final boolean withdrawalFeeApplicableForTransfer, final boolean depositFeeApplicableForTransfer,
+            final AccountingRuleType accountingRuleType, final Set<Charge> charges,
             final DepositProductTermAndPreClosure productTermAndPreClosure, final Set<InterestRateChart> charts,
             final boolean allowOverdraft, final BigDecimal overdraftLimit) {
 
         super(name, shortName, description, currency, interestRate, interestCompoundingPeriodType, interestPostingPeriodType,
                 interestCalculationType, interestCalculationDaysInYearType, minRequiredOpeningBalance, lockinPeriodFrequency,
-                lockinPeriodFrequencyType, withdrawalFeeApplicableForTransfer, accountingRuleType, charges, allowOverdraft, overdraftLimit);
+                lockinPeriodFrequencyType, withdrawalFeeApplicableForTransfer, depositFeeApplicableForTransfer, accountingRuleType,
+                charges, allowOverdraft, overdraftLimit);
 
         if (charts != null) {
             this.charts = charts;
@@ -310,7 +313,7 @@ public class FixedDepositProduct extends SavingsProduct {
     }
 
     private void validateDomainRules(final DataValidatorBuilder baseDataValidator) {
-        
+
         final DepositTermDetail termDetails = this.depositProductTermAndPreClosure().depositTermDetail();
         final boolean isMinTermGreaterThanMax = termDetails.isMinDepositTermGreaterThanMaxDepositTerm();
         if (isMinTermGreaterThanMax) {
@@ -325,7 +328,7 @@ public class FixedDepositProduct extends SavingsProduct {
             baseDataValidator.reset().parameter(DepositsApiConstants.nominalAnnualInterestRateParamName).value(nominalAnnualInterestRate)
                     .failWithCodeNoParameterAddedToErrorCode("interest.chart.or.nominal.interest.rate.required");
         }
-        
+
         this.validateInterestPostingAndCompoundingPeriodTypes(baseDataValidator);
     }
 

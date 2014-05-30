@@ -31,12 +31,14 @@ import org.apache.commons.lang.builder.EqualsBuilder;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 import org.joda.time.LocalDate;
 import org.joda.time.MonthDay;
+import org.mifosplatform.infrastructure.codes.domain.CodeValue;
 import org.mifosplatform.infrastructure.core.api.JsonCommand;
 import org.mifosplatform.organisation.monetary.domain.MonetaryCurrency;
 import org.mifosplatform.organisation.monetary.domain.Money;
 import org.mifosplatform.portfolio.charge.domain.Charge;
 import org.mifosplatform.portfolio.charge.domain.ChargeCalculationType;
 import org.mifosplatform.portfolio.charge.domain.ChargeTimeType;
+import org.mifosplatform.portfolio.charge.domain.PaymentTypeCharge;
 import org.mifosplatform.portfolio.charge.exception.SavingsAccountChargeWithoutMandatoryFieldException;
 import org.springframework.data.jpa.domain.AbstractPersistable;
 
@@ -105,6 +107,13 @@ public class SavingsAccountCharge extends AbstractPersistable<Long> {
     @Column(name = "is_active", nullable = false)
     private boolean status = true;
 
+    @Column(name = "applicable_to_all_products", nullable = false)
+    private boolean applicableToAllProducts = false;
+
+    @ManyToOne
+    @JoinColumn(name = "payment_type_id", nullable = true)
+    private CodeValue paymentType;
+
     public static SavingsAccountCharge createNewFromJson(final SavingsAccount savingsAccount, final Charge chargeDefinition,
             final JsonCommand command) {
 
@@ -115,16 +124,28 @@ public class SavingsAccountCharge extends AbstractPersistable<Long> {
         final ChargeTimeType chargeTime = null;
         final ChargeCalculationType chargeCalculation = null;
         final boolean status = true;
+        final boolean applicableToAllProducts = false;
+        final CodeValue paymentType = null;
 
         return new SavingsAccountCharge(savingsAccount, chargeDefinition, amount, chargeTime, chargeCalculation, dueDate, status,
-                feeOnMonthDay, feeInterval);
+                feeOnMonthDay, feeInterval, applicableToAllProducts, paymentType);
     }
 
     public static SavingsAccountCharge createNewWithoutSavingsAccount(final Charge chargeDefinition, final BigDecimal amountPayable,
             final ChargeTimeType chargeTime, final ChargeCalculationType chargeCalculation, final LocalDate dueDate, final boolean status,
             final MonthDay feeOnMonthDay, final Integer feeInterval) {
+
+        final boolean applicableToAllProducts = false;
+        final CodeValue paymentType = null;
         return new SavingsAccountCharge(null, chargeDefinition, amountPayable, chargeTime, chargeCalculation, dueDate, status,
-                feeOnMonthDay, feeInterval);
+                feeOnMonthDay, feeInterval, applicableToAllProducts, paymentType);
+    }
+
+    public static SavingsAccountCharge createFromPaymentTypeCharge(final SavingsAccount savingsAccount, final PaymentTypeCharge paymentTypeCharge) {
+        final Charge charge = paymentTypeCharge.charge();
+        return new SavingsAccountCharge(savingsAccount, charge, paymentTypeCharge.amount(), charge.chargeTimeType(),
+                paymentTypeCharge.chargeCalculationType(), null, charge.isActive(), charge.getFeeOnMonthDay(), charge.feeInterval(),
+                charge.isApplicableToAllProducts(), paymentTypeCharge.paymentType());
     }
 
     protected SavingsAccountCharge() {
@@ -133,7 +154,7 @@ public class SavingsAccountCharge extends AbstractPersistable<Long> {
 
     private SavingsAccountCharge(final SavingsAccount savingsAccount, final Charge chargeDefinition, final BigDecimal amount,
             final ChargeTimeType chargeTime, final ChargeCalculationType chargeCalculation, final LocalDate dueDate, final boolean status,
-            MonthDay feeOnMonthDay, final Integer feeInterval) {
+            MonthDay feeOnMonthDay, final Integer feeInterval, boolean applicableToAllProducts, final CodeValue paymentType) {
 
         this.savingsAccount = savingsAccount;
         this.charge = chargeDefinition;
@@ -192,6 +213,8 @@ public class SavingsAccountCharge extends AbstractPersistable<Long> {
 
         this.paid = determineIfFullyPaid();
         this.status = status;
+        this.applicableToAllProducts = applicableToAllProducts;
+        this.paymentType = paymentType;
     }
 
     public void recalculateAmountOutstanding() {
@@ -278,7 +301,7 @@ public class SavingsAccountCharge extends AbstractPersistable<Long> {
         this.amountPaid = amountPaid.getAmount();
         this.amountOutstanding = calculateAmountOutstanding(currency);
 
-        if (this.isWithdrawalFee()) {
+        if (this.isWithdrawalFee() || this.isDepositFee()) {
             this.amountOutstanding = BigDecimal.ZERO;
         }
         // to reset amount outstanding for annual and monthly fee
@@ -583,6 +606,12 @@ public class SavingsAccountCharge extends AbstractPersistable<Long> {
 
         return amountPaidOnThisCharge;
     }
+    
+    public void updateCalculationTypeAndAmount(final BigDecimal amount, final ChargeCalculationType chargeCalculation){
+        this.amount = amount;
+        this.chargeCalculation = chargeCalculation.getValue();
+        //populateDerivedFields(BigDecimal.ZERO, amount);
+    }
 
     public String name() {
         return this.charge.getName();
@@ -656,7 +685,7 @@ public class SavingsAccountCharge extends AbstractPersistable<Long> {
                 .toHashCode();
     }
 
-    public BigDecimal updateWithdralFeeAmount(final BigDecimal transactionAmount) {
+    public BigDecimal updateRecurringFeeAmount(final BigDecimal transactionAmount) {
         BigDecimal amountPaybale = BigDecimal.ZERO;
         if (ChargeCalculationType.fromInt(this.chargeCalculation).isFlat()) {
             amountPaybale = this.amount;
@@ -728,4 +757,20 @@ public class SavingsAccountCharge extends AbstractPersistable<Long> {
     public boolean feeSettingsSet() {
         return this.feeOnDay != null && this.feeOnMonth != null;
     }
+
+    public boolean isDepositFee() {
+        return ChargeTimeType.fromInt(this.chargeTime).isDepositFee();
+    }
+    
+    public CodeValue paymentType(){
+        return this.paymentType;
+    }
+    
+    public boolean isApplicableOnlyForPaymentType(){
+        return this.paymentType != null;
+    }
+    
+    public boolean isApplicableToAllProducts() {
+        return this.applicableToAllProducts;
+    } 
 }

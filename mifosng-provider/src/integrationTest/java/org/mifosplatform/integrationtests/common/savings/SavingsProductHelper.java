@@ -59,6 +59,7 @@ public class SavingsProductHelper {
     private String minRequiredOpeningBalance = null;
     private String lockinPeriodFrequency = "0";
     private String withdrawalFeeForTransfers = "true";
+    private String depositFeeForTransfers = "true";
     private String lockingPeriodFrequencyType = DAYS;
     private final String currencyCode = USD;
     private final String interestCalculationDaysInYearType = DAYS_365;
@@ -93,6 +94,7 @@ public class SavingsProductHelper {
         map.put("lockinPeriodFrequency", this.lockinPeriodFrequency);
         map.put("lockinPeriodFrequencyType", this.lockingPeriodFrequencyType);
         map.put("withdrawalFeeForTransfers", this.withdrawalFeeForTransfers);
+        map.put("depositFeeForTransfers", this.depositFeeForTransfers);
 
         if (this.accountingRule.equals(CASH_BASED)) {
             map.putAll(getAccountMappingForCashBased());
@@ -116,7 +118,7 @@ public class SavingsProductHelper {
         this.minRequiredOpeningBalance = minBalance;
         return this;
     }
-    
+
     public SavingsProductHelper withInterestCompoundingPeriodTypeAsMonthly() {
         this.interestCompoundingPeriodType = MONTHLY;
         return this;

@@ -13,6 +13,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.mifosplatform.integrationtests.common.ClientHelper;
+import org.mifosplatform.integrationtests.common.CommonConstants;
 import org.mifosplatform.integrationtests.common.GlobalConfigurationHelper;
 import org.mifosplatform.integrationtests.common.HolidayHelper;
 import org.mifosplatform.integrationtests.common.SchedulerJobHelper;
@@ -98,8 +99,8 @@ public class SchedulerJobsTestResults {
         HashMap savingsStatusHashMap = SavingsStatusChecker.getStatusOfSavings(this.requestSpec, this.responseSpec, savingsId);
         SavingsStatusChecker.verifySavingsIsPending(savingsStatusHashMap);
 
-        final Integer annualFeeChargeId = ChargesHelper.createCharges(this.requestSpec, this.responseSpec,
-                ChargesHelper.getSavingsAnnualFeeJSON());
+        final Integer annualFeeChargeId = (Integer) ChargesHelper.createCharges(this.requestSpec, this.responseSpec,
+                ChargesHelper.getSavingsAnnualFeeJSON(), CommonConstants.RESPONSE_RESOURCE_ID);
         Assert.assertNotNull(annualFeeChargeId);
 
         this.savingsAccountHelper.addChargesForSavings(savingsId, annualFeeChargeId);
@@ -201,8 +202,8 @@ public class SchedulerJobsTestResults {
         loanStatusHashMap = this.loanTransactionHelper.approveLoan(AccountTransferTest.LOAN_APPROVAL_DATE, loanID);
         LoanStatusChecker.verifyLoanIsApproved(loanStatusHashMap);
 
-        Integer specifiedDueDateChargeId = ChargesHelper.createCharges(this.requestSpec, this.responseSpec,
-                ChargesHelper.getLoanSpecifiedDueDateWithAccountTransferJSON());
+        Integer specifiedDueDateChargeId = (Integer) ChargesHelper.createCharges(this.requestSpec, this.responseSpec,
+                ChargesHelper.getLoanSpecifiedDueDateWithAccountTransferJSON(), CommonConstants.RESPONSE_RESOURCE_ID);
         Assert.assertNotNull(specifiedDueDateChargeId);
 
         this.loanTransactionHelper.addChargesForLoan(loanID,
@@ -319,8 +320,8 @@ public class SchedulerJobsTestResults {
         HashMap savingsStatusHashMap = SavingsStatusChecker.getStatusOfSavings(this.requestSpec, this.responseSpec, savingsId);
         SavingsStatusChecker.verifySavingsIsPending(savingsStatusHashMap);
 
-        final Integer specifiedDueDateChargeId = ChargesHelper.createCharges(this.requestSpec, this.responseSpec,
-                ChargesHelper.getSavingsSpecifiedDueDateJSON());
+        final Integer specifiedDueDateChargeId = (Integer) ChargesHelper.createCharges(this.requestSpec, this.responseSpec,
+                ChargesHelper.getSavingsSpecifiedDueDateJSON(), CommonConstants.RESPONSE_RESOURCE_ID);
         Assert.assertNotNull(specifiedDueDateChargeId);
 
         this.savingsAccountHelper.addChargesForSavings(savingsId, specifiedDueDateChargeId);
@@ -519,8 +520,8 @@ public class SchedulerJobsTestResults {
         final Integer loanID = applyForLoanApplication(clientID.toString(), loanProductID.toString(), null);
         Assert.assertNotNull(loanID);
 
-        Integer disburseChargeId = ChargesHelper
-                .createCharges(this.requestSpec, this.responseSpec, ChargesHelper.getLoanDisbursementJSON());
+        Integer disburseChargeId = (Integer) ChargesHelper.createCharges(this.requestSpec, this.responseSpec,
+                ChargesHelper.getLoanDisbursementJSON(), CommonConstants.RESPONSE_RESOURCE_ID);
         Assert.assertNotNull(disburseChargeId);
 
         this.loanTransactionHelper.addChargesForLoan(loanID,
@@ -640,8 +641,8 @@ public class SchedulerJobsTestResults {
         final Integer clientID = ClientHelper.createClient(this.requestSpec, this.responseSpec);
         Assert.assertNotNull(clientID);
 
-        Integer overdueFeeChargeId = ChargesHelper
-                .createCharges(this.requestSpec, this.responseSpec, ChargesHelper.getLoanOverdueFeeJSON());
+        Integer overdueFeeChargeId = (Integer) ChargesHelper.createCharges(this.requestSpec, this.responseSpec,
+                ChargesHelper.getLoanOverdueFeeJSON(), CommonConstants.RESPONSE_RESOURCE_ID);
         Assert.assertNotNull(overdueFeeChargeId);
 
         final Integer loanProductID = createLoanProduct(overdueFeeChargeId.toString());

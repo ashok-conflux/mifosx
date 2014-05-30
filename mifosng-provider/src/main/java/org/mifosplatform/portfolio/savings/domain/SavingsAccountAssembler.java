@@ -24,6 +24,7 @@ import static org.mifosplatform.portfolio.savings.SavingsApiConstants.overdraftL
 import static org.mifosplatform.portfolio.savings.SavingsApiConstants.productIdParamName;
 import static org.mifosplatform.portfolio.savings.SavingsApiConstants.submittedOnDateParamName;
 import static org.mifosplatform.portfolio.savings.SavingsApiConstants.withdrawalFeeForTransfersParamName;
+import static org.mifosplatform.portfolio.savings.SavingsApiConstants.depositFeeForTransfersParamName;
 
 import java.math.BigDecimal;
 import java.util.Set;
@@ -200,9 +201,15 @@ public class SavingsAccountAssembler {
         } else {
             lockinPeriodFrequencyType = product.lockinPeriodFrequencyType();
         }
+
         boolean iswithdrawalFeeApplicableForTransfer = false;
         if (command.parameterExists(withdrawalFeeForTransfersParamName)) {
             iswithdrawalFeeApplicableForTransfer = command.booleanPrimitiveValueOfParameterNamed(withdrawalFeeForTransfersParamName);
+        }
+
+        boolean isDepositFeeApplicableForTransfer = false;
+        if (command.parameterExists(depositFeeForTransfersParamName)) {
+            isDepositFeeApplicableForTransfer = command.booleanPrimitiveValueOfParameterNamed(depositFeeForTransfersParamName);
         }
 
         final Set<SavingsAccountCharge> charges = this.savingsAccountChargeAssembler.fromParsedJson(element, product.currency().getCode());
@@ -217,8 +224,8 @@ public class SavingsAccountAssembler {
         final SavingsAccount account = SavingsAccount.createNewApplicationForSubmittal(client, group, product, fieldOfficer, accountNo,
                 externalId, accountType, submittedOnDate, submittedBy, interestRate, interestCompoundingPeriodType,
                 interestPostingPeriodType, interestCalculationType, interestCalculationDaysInYearType, minRequiredOpeningBalance,
-                lockinPeriodFrequency, lockinPeriodFrequencyType, iswithdrawalFeeApplicableForTransfer, charges, allowOverdraft,
-                overdraftLimit);
+                lockinPeriodFrequency, lockinPeriodFrequencyType, iswithdrawalFeeApplicableForTransfer, isDepositFeeApplicableForTransfer,
+                charges, allowOverdraft, overdraftLimit);
         account.setHelpers(this.savingsAccountTransactionSummaryWrapper, this.savingsHelper);
 
         account.validateNewApplicationState(DateUtils.getLocalDateOfTenant(), SAVINGS_ACCOUNT_RESOURCE_NAME);
@@ -271,7 +278,8 @@ public class SavingsAccountAssembler {
                 accountType, appliedonDate, appliedBy, product.nominalAnnualInterestRate(), product.interestCompoundingPeriodType(),
                 product.interestPostingPeriodType(), product.interestCalculationType(), product.interestCalculationDaysInYearType(),
                 product.minRequiredOpeningBalance(), product.lockinPeriodFrequency(), product.lockinPeriodFrequencyType(),
-                product.isWithdrawalFeeApplicableForTransfer(), charges, product.isAllowOverdraft(), product.overdraftLimit());
+                product.isWithdrawalFeeApplicableForTransfer(), product.isDepositFeeApplicableForTransfer(), charges,
+                product.isAllowOverdraft(), product.overdraftLimit());
         account.setHelpers(this.savingsAccountTransactionSummaryWrapper, this.savingsHelper);
 
         account.validateNewApplicationState(DateUtils.getLocalDateOfTenant(), SAVINGS_ACCOUNT_RESOURCE_NAME);
