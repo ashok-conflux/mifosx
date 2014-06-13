@@ -2034,6 +2034,9 @@ public class SavingsAccount extends AbstractPersistable<Long> {
     }
 
     private void handleChargeTransactions(final SavingsAccountCharge savingsAccountCharge, final SavingsAccountTransaction transaction) {
+        // do not process zero charge amount
+        if (!transaction.getAmount(getCurrency()).isGreaterThanZero()) return;
+
         // Provide a link between transaction and savings charge for which
         // amount is waived.
         final SavingsAccountChargePaidBy chargePaidBy = SavingsAccountChargePaidBy.instance(transaction, savingsAccountCharge, transaction
@@ -2123,29 +2126,34 @@ public class SavingsAccount extends AbstractPersistable<Long> {
      * 
      * @param parent
      *            Parent transaction to be linked
-     * @param paymentTypeCharges
+     * @param paymentTypeCharges Collection of payment type charges
      * @param transactionAmount
      *            Deposit/Withdrawal transaction amount
      */
-    public void addAndPayChargesLinkedWithPaymentType(final SavingsAccountTransaction parent,
-            final Collection<PaymentTypeCharge> paymentTypeCharges, final BigDecimal transactionAmount) {
-        for (PaymentTypeCharge paymentTypeCharge : paymentTypeCharges) {
+    public void addAndPayLinkedCharges(final SavingsAccountTransaction parent,
+            final Set<SavingsAccountCharge> linkedCharges, final BigDecimal transactionAmount) {
+        
+        for (SavingsAccountCharge linkedCharge : linkedCharges) {
             SavingsAccountCharge accountCharge = null;
-            final Charge charge = paymentTypeCharge.charge();
+            final Charge charge = linkedCharge.getCharge();
             // only the charges which are applied for all products will be
             // charged
             if (charge.isApplicableForPaymentTypes()) {
 
                 // retrieve charge from savings account if it's already added
-                accountCharge = findLinkedCharge(charge, paymentTypeCharge.paymentType());
+                accountCharge = findLinkedCharge(charge, linkedCharge.paymentType());
 
                 // if charge is not yet added
                 if (accountCharge == null) {
                     // add charge only if applicable to all savings products
                     if (charge.isApplicableToAllProducts()) {
-                        accountCharge = SavingsAccountCharge.createFromPaymentTypeCharge(this, paymentTypeCharge);
+                        accountCharge = linkedCharge;
+                        accountCharge.update(this);
                         this.charges().add(accountCharge);
                     }
+                }else {
+                    accountCharge.updateCalculationTypeAndAmount(linkedCharge.amount(),
+                            linkedCharge.getCharge().chargeCalculationType());
                 }
 
                 // charge might have added separately to savings account
@@ -2158,7 +2166,7 @@ public class SavingsAccount extends AbstractPersistable<Long> {
                      */
 
                     /**
-                     * AND
+                     * OR
                      * 
                      * pay charge if not applicable to all products but added to
                      * savings account !charge.isApplicableToAllProducts() &&
@@ -2169,10 +2177,11 @@ public class SavingsAccount extends AbstractPersistable<Long> {
                     if (charge.isApplicableToAllProducts()
                             || (!charge.isApplicableToAllProducts() && !accountCharge.isApplicableToAllProducts())) {
 
-                        accountCharge.updateCalculationTypeAndAmount(paymentTypeCharge.amount(), paymentTypeCharge.chargeCalculationType());
-                        accountCharge.updateRecurringFeeAmount(transactionAmount);
-                        this.handlePayChargeTransactions(accountCharge, accountCharge.getAmountOutstanding(this.getCurrency()),
-                                parent.transactionLocalDate(), parent);
+                        if (transactionAmount != null && !transactionAmount.equals(BigDecimal.ZERO)) {
+                            accountCharge.updateRecurringFeeAmount(transactionAmount);
+                            this.handlePayChargeTransactions(accountCharge, accountCharge.getAmountOutstanding(this.getCurrency()),
+                                    parent.transactionLocalDate(), parent);
+                        }
                     }
                 }
 

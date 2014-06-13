@@ -25,6 +25,8 @@ import org.mifosplatform.infrastructure.core.data.DataValidatorBuilder;
 import org.mifosplatform.infrastructure.core.exception.InvalidJsonException;
 import org.mifosplatform.infrastructure.core.exception.PlatformApiDataValidationException;
 import org.mifosplatform.infrastructure.core.serialization.FromJsonHelper;
+import org.mifosplatform.portfolio.charge.data.PaymentTypeChargeDataValidator;
+import org.mifosplatform.portfolio.paymentdetail.data.PaymentDetailDataValidator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -36,12 +38,17 @@ public class AccountTransfersDataValidator {
 
     private final FromJsonHelper fromApiJsonHelper;
     private final AccountTransfersDetailDataValidator accountTransfersDetailDataValidator;
+    private final PaymentDetailDataValidator paymentDetailDataValidator;
+    private final PaymentTypeChargeDataValidator paymentTypeChargeDataValidator;
 
     @Autowired
     public AccountTransfersDataValidator(final FromJsonHelper fromApiJsonHelper,
-            final AccountTransfersDetailDataValidator accountTransfersDetailDataValidator) {
+            final AccountTransfersDetailDataValidator accountTransfersDetailDataValidator,
+            final PaymentDetailDataValidator paymentDetailDataValidator, final PaymentTypeChargeDataValidator paymentTypeChargeDataValidator) {
         this.fromApiJsonHelper = fromApiJsonHelper;
         this.accountTransfersDetailDataValidator = accountTransfersDetailDataValidator;
+        this.paymentDetailDataValidator = paymentDetailDataValidator;
+        this.paymentTypeChargeDataValidator = paymentTypeChargeDataValidator;
     }
 
     public void validate(final JsonCommand command) {
@@ -70,7 +77,10 @@ public class AccountTransfersDataValidator {
         final String transactionDescription = this.fromApiJsonHelper.extractStringNamed(transferDescriptionParamName, element);
         baseDataValidator.reset().parameter(transferDescriptionParamName).value(transactionDescription).notBlank()
                 .notExceedingLengthOf(200);
+        this.paymentDetailDataValidator.validatePaymentDetails(element, baseDataValidator);
 
+        this.paymentTypeChargeDataValidator.validateLinkedChargesExternalChargeAmount(element, baseDataValidator);
+        
         throwExceptionIfValidationWarningsExist(dataValidationErrors);
     }
 

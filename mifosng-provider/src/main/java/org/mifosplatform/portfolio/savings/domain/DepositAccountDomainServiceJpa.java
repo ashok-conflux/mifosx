@@ -109,8 +109,9 @@ public class DepositAccountDomainServiceJpa implements DepositAccountDomainServi
             final LocalDate transactionDate, final BigDecimal transactionAmount, final PaymentDetail paymentDetail) {
         boolean isAccountTransfer = false;
         final boolean applyDepositFee = false;
+        final Set<SavingsAccountCharge> linkedCharges = null;
         return this.savingsAccountDomainService.handleDeposit(account, fmt, transactionDate, transactionAmount, paymentDetail,
-                isAccountTransfer, applyDepositFee);
+                isAccountTransfer, applyDepositFee, linkedCharges);
     }
 
     @Transactional
@@ -121,8 +122,9 @@ public class DepositAccountDomainServiceJpa implements DepositAccountDomainServi
         final boolean isPreMatureClosure = false;
         final MathContext mc = MathContext.DECIMAL64;
         final boolean applyDepositFee = false;
+        final Set<SavingsAccountCharge> linkedCharges = null;
         final SavingsAccountTransaction deposit = this.savingsAccountDomainService.handleDeposit(account, fmt, transactionDate,
-                transactionAmount, paymentDetail, isAccountTransfer, applyDepositFee);
+                transactionAmount, paymentDetail, isAccountTransfer, applyDepositFee, linkedCharges);
 
         account.handleScheduleInstallments(deposit);
         account.updateMaturityDateAndAmount(mc, isPreMatureClosure);

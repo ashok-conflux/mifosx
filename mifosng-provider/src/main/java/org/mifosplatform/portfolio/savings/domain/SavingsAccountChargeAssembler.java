@@ -18,13 +18,17 @@ import static org.mifosplatform.portfolio.savings.SavingsApiConstants.idParamNam
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 
 import org.joda.time.LocalDate;
 import org.joda.time.MonthDay;
+import org.mifosplatform.infrastructure.core.api.JsonCommand;
 import org.mifosplatform.infrastructure.core.data.ApiParameterError;
 import org.mifosplatform.infrastructure.core.data.DataValidatorBuilder;
 import org.mifosplatform.infrastructure.core.exception.PlatformApiDataValidationException;
@@ -34,10 +38,14 @@ import org.mifosplatform.portfolio.charge.domain.ChargeCalculationType;
 import org.mifosplatform.portfolio.charge.domain.ChargeRepositoryWrapper;
 import org.mifosplatform.portfolio.charge.domain.ChargeTimeType;
 import org.mifosplatform.portfolio.charge.domain.PaymentTypeCharge;
+import org.mifosplatform.portfolio.charge.domain.PaymentTypeChargeRepository;
 import org.mifosplatform.portfolio.charge.exception.ChargeCannotBeAppliedToException;
 import org.mifosplatform.portfolio.charge.exception.SavingsAccountChargeNotFoundException;
+import org.mifosplatform.portfolio.paymentdetail.PaymentDetailConstants;
+import org.mifosplatform.portfolio.paymentdetail.domain.PaymentDetail;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -49,13 +57,16 @@ public class SavingsAccountChargeAssembler {
     private final FromJsonHelper fromApiJsonHelper;
     private final ChargeRepositoryWrapper chargeRepository;
     private final SavingsAccountChargeRepository savingsAccountChargeRepository;
+    private final PaymentTypeChargeRepository paymentTypeChargeRepository;
 
     @Autowired
     public SavingsAccountChargeAssembler(final FromJsonHelper fromApiJsonHelper, final ChargeRepositoryWrapper chargeRepository,
-            final SavingsAccountChargeRepository savingsAccountChargeRepository) {
+            final SavingsAccountChargeRepository savingsAccountChargeRepository,
+            final PaymentTypeChargeRepository paymentTypeChargeRepository) {
         this.fromApiJsonHelper = fromApiJsonHelper;
         this.chargeRepository = chargeRepository;
         this.savingsAccountChargeRepository = savingsAccountChargeRepository;
+        this.paymentTypeChargeRepository = paymentTypeChargeRepository;
     }
 
     public Set<SavingsAccountCharge> fromParsedJson(final JsonElement element, final String productCurrencyCode) {
@@ -118,10 +129,11 @@ public class SavingsAccountChargeAssembler {
                             final SavingsAccountCharge savingsAccountCharge = SavingsAccountCharge.createNewWithoutSavingsAccount(
                                     chargeDefinition, amount, chargeTime, chargeCalculation, dueDate, status, feeOnMonthDay, feeInterval);
                             savingsAccountCharges.add(savingsAccountCharge);
-                        }else {
+                        } else {
                             for (PaymentTypeCharge paymentTypeCharge : linkedCharges) {
                                 final SavingsAccount account = null;
-                                final SavingsAccountCharge savingsAccountCharge = SavingsAccountCharge.createFromPaymentTypeCharge(account, paymentTypeCharge);
+                                final SavingsAccountCharge savingsAccountCharge = SavingsAccountCharge.createFromPaymentTypeCharge(account,
+                                        paymentTypeCharge);
                                 savingsAccountCharges.add(savingsAccountCharge);
                             }
                         }
@@ -173,7 +185,7 @@ public class SavingsAccountChargeAssembler {
         final List<ApiParameterError> dataValidationErrors = new ArrayList<ApiParameterError>();
         final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors)
                 .resource(SAVINGS_ACCOUNT_RESOURCE_NAME);
-        boolean isOneWithdrawalPresent = false;
+        //boolean isOneWithdrawalPresent = false;
         boolean isOneAnnualPresent = false;
         for (SavingsAccountCharge charge : charges) {
             if (!charge.hasCurrencyCodeOf(productCurrencyCode)) {
@@ -181,12 +193,12 @@ public class SavingsAccountChargeAssembler {
                         .failWithCodeNoParameterAddedToErrorCode("currency.and.charge.currency.not.same");
             }
 
-            if (charge.isWithdrawalFee()) {
+            /*if (charge.isWithdrawalFee()) {
                 if (isOneWithdrawalPresent) {
                     baseDataValidator.reset().failWithCodeNoParameterAddedToErrorCode("multiple.withdrawal.fee.per.account.not.supported");
                 }
                 isOneWithdrawalPresent = true;
-            }
+            }*/
 
             if (charge.isAnnualFee()) {
                 if (isOneAnnualPresent) {
@@ -196,5 +208,90 @@ public class SavingsAccountChargeAssembler {
             }
         }
         if (!dataValidationErrors.isEmpty()) { throw new PlatformApiDataValidationException(dataValidationErrors); }
+    }
+
+    public Set<SavingsAccountCharge> fromLinkedPaymentTypeCharges(final Long paymentTypeId, final ChargeTimeType chargeTimeType) {
+        final Set<SavingsAccountCharge> linkedCharges = new HashSet<SavingsAccountCharge>();
+
+        if (paymentTypeId != null) {
+            final Collection<PaymentTypeCharge> paymentTypeCharges = this.paymentTypeChargeRepository.findByPaymentTypeIdAndChargeChargeTime(
+                    paymentTypeId, chargeTimeType.getValue());
+            for (PaymentTypeCharge paymentTypeCharge : paymentTypeCharges) {
+                final SavingsAccount savingsAccount = null;
+                final SavingsAccountCharge savingsAccountCharge = SavingsAccountCharge.createFromPaymentTypeCharge(savingsAccount, paymentTypeCharge);
+                linkedCharges.add(savingsAccountCharge);
+            }
+        }
+
+        return linkedCharges;
+    }
+
+    public Map<Long, BigDecimal> assembleChargesAmount(final JsonCommand command) {
+        final JsonElement element = command.parsedJson();
+        final Map<Long, BigDecimal> chargeAmounts = new HashMap<Long, BigDecimal>();
+        if (element.isJsonObject()) {
+
+            final JsonObject topLevelJsonElement = element.getAsJsonObject();
+
+            if (topLevelJsonElement.has(chargesParamName) && topLevelJsonElement.get(chargesParamName).isJsonArray()) {
+
+                final Locale locale = this.fromApiJsonHelper.extractLocaleParameter(topLevelJsonElement);
+                final JsonArray array = topLevelJsonElement.get(chargesParamName).getAsJsonArray();
+
+                for (JsonElement jsonElement : array) {
+                    final JsonObject linkedChargeElement = jsonElement.getAsJsonObject();
+
+                    final Long chargeId = this.fromApiJsonHelper.extractLongNamed(chargeIdParamName, linkedChargeElement);
+                    final BigDecimal amount = this.fromApiJsonHelper.extractBigDecimalNamed(amountParamName, linkedChargeElement, locale);
+                    chargeAmounts.put(chargeId, amount);
+                }
+
+            }
+
+        }
+
+        return chargeAmounts;
+    }
+
+    public Set<SavingsAccountCharge> fromLinkedChargesAndExternalChargesAmount(final JsonCommand command, final PaymentDetail paymentDetail,
+            final ChargeTimeType chargeTimeType) {
+        
+        if(paymentDetail == null) return null;
+        
+        final Long paymentTypeId = paymentDetail.getPaymentType().getId(); 
+        
+        final List<ApiParameterError> dataValidationErrors = new ArrayList<ApiParameterError>();
+        final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors)
+                .resource(SAVINGS_ACCOUNT_RESOURCE_NAME);
+        
+        final Set<SavingsAccountCharge> linkedCharges = this.fromLinkedPaymentTypeCharges(paymentTypeId, chargeTimeType);
+        final Map<Long, BigDecimal> externalChargesAmount = this.assembleChargesAmount(command);
+        final Set<Long> nonLinkedCharges = new HashSet<Long>();        
+        boolean isChargeLinked = false;
+        if (externalChargesAmount != null && !externalChargesAmount.isEmpty()) {
+            for (Map.Entry<Long, BigDecimal> entry : externalChargesAmount.entrySet()) {
+                isChargeLinked = false;
+                for (SavingsAccountCharge savingsAccountCharge : linkedCharges) {
+                    if (entry.getKey().equals(savingsAccountCharge.getCharge().getId())) {
+                        savingsAccountCharge.updateCalculationTypeAndAmount(entry.getValue(), savingsAccountCharge.getCharge()
+                                .chargeCalculationType());
+                        isChargeLinked = true;
+                        break;
+                    }
+                }
+                if(!isChargeLinked){
+                    nonLinkedCharges.add(entry.getKey());
+                }
+            }
+        }
+
+        if(!CollectionUtils.isEmpty(nonLinkedCharges)){
+            for (Long chargeId : nonLinkedCharges) {
+                baseDataValidator.reset().parameter(chargeIdParamName).value(chargeId).failWithCode("not.linked.to.payment.type", chargeId, paymentTypeId);
+            }            
+        }
+        
+        if (!dataValidationErrors.isEmpty()) { throw new PlatformApiDataValidationException(dataValidationErrors); }
+        return linkedCharges;
     }
 }

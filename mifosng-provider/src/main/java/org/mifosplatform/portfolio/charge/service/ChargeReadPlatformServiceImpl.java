@@ -269,11 +269,11 @@ public class ChargeReadPlatformServiceImpl implements ChargeReadPlatformService 
 
         String sql = "select "
                 + rm.chargeSchema()
-                + " where c.is_deleted=0 and c.is_active=1 and c.charge_applies_to_enum=? and (c.applicable_to_all_products is null or c.applicable_to_all_products = 0 ) order by c.name ";
+                + " where c.is_deleted=0 and c.is_active=1 and c.charge_applies_to_enum=? order by c.name ";
         if (feeChargesOnly) {
             sql = "select "
                     + rm.chargeSchema()
-                    + " where c.is_deleted=0 and c.is_active=1 and c.is_penalty=0 and c.charge_applies_to_enum=? and (c.applicable_to_all_products is null or c.applicable_to_all_products = 0 ) order by c.name ";
+                    + " where c.is_deleted=0 and c.is_active=1 and c.is_penalty=0 and c.charge_applies_to_enum=? order by c.name ";
         }
 
         return this.jdbcTemplate.query(sql, rm, new Object[] { ChargeAppliesTo.SAVINGS.getValue() });

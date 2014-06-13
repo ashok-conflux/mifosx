@@ -51,6 +51,7 @@ import org.mifosplatform.portfolio.account.service.AccountAssociationsReadPlatfo
 import org.mifosplatform.portfolio.account.service.AccountTransfersReadPlatformService;
 import org.mifosplatform.portfolio.charge.domain.Charge;
 import org.mifosplatform.portfolio.charge.domain.ChargeRepositoryWrapper;
+import org.mifosplatform.portfolio.charge.domain.ChargeTimeType;
 import org.mifosplatform.portfolio.client.domain.Client;
 import org.mifosplatform.portfolio.client.exception.ClientNotActiveException;
 import org.mifosplatform.portfolio.group.domain.Group;
@@ -67,6 +68,7 @@ import org.mifosplatform.portfolio.savings.data.SavingsAccountTransactionDataVal
 import org.mifosplatform.portfolio.savings.domain.SavingsAccount;
 import org.mifosplatform.portfolio.savings.domain.SavingsAccountAssembler;
 import org.mifosplatform.portfolio.savings.domain.SavingsAccountCharge;
+import org.mifosplatform.portfolio.savings.domain.SavingsAccountChargeAssembler;
 import org.mifosplatform.portfolio.savings.domain.SavingsAccountChargeRepositoryWrapper;
 import org.mifosplatform.portfolio.savings.domain.SavingsAccountDomainService;
 import org.mifosplatform.portfolio.savings.domain.SavingsAccountRepository;
@@ -101,6 +103,7 @@ public class SavingsAccountWritePlatformServiceJpaRepositoryImpl implements Savi
     private final SavingsAccountChargeRepositoryWrapper savingsAccountChargeRepository;
     private final HolidayWritePlatformService holidayWritePlatformService;
     private final WorkingDaysWritePlatformService workingDaysWritePlatformService;
+    private final SavingsAccountChargeAssembler savingsAccountChargeAssembler;
 
     @Autowired
     public SavingsAccountWritePlatformServiceJpaRepositoryImpl(final PlatformSecurityContext context,
@@ -117,7 +120,8 @@ public class SavingsAccountWritePlatformServiceJpaRepositoryImpl implements Savi
             final AccountAssociationsReadPlatformService accountAssociationsReadPlatformService,
             final ChargeRepositoryWrapper chargeRepository, final SavingsAccountChargeRepositoryWrapper savingsAccountChargeRepository,
             final HolidayWritePlatformService holidayWritePlatformService,
-            final WorkingDaysWritePlatformService workingDaysWritePlatformService) {
+            final WorkingDaysWritePlatformService workingDaysWritePlatformService,
+            final SavingsAccountChargeAssembler savingsAccountChargeAssembler) {
         this.context = context;
         this.savingAccountRepository = savingAccountRepository;
         this.savingsAccountTransactionRepository = savingsAccountTransactionRepository;
@@ -135,6 +139,7 @@ public class SavingsAccountWritePlatformServiceJpaRepositoryImpl implements Savi
         this.savingsAccountChargeRepository = savingsAccountChargeRepository;
         this.holidayWritePlatformService = holidayWritePlatformService;
         this.workingDaysWritePlatformService = workingDaysWritePlatformService;
+        this.savingsAccountChargeAssembler = savingsAccountChargeAssembler;
     }
 
     @Transactional
@@ -158,9 +163,13 @@ public class SavingsAccountWritePlatformServiceJpaRepositoryImpl implements Savi
             final Locale locale = command.extractLocale();
             final DateTimeFormatter fmt = DateTimeFormat.forPattern(command.dateFormat()).withLocale(locale);
             Money amountForDeposit = account.activateWithBalance();
+            final PaymentDetail paymentDetail = null;
+            // Assemble Charges linked with payment type
+            final Set<SavingsAccountCharge> linkedCharges = this.savingsAccountChargeAssembler.fromLinkedChargesAndExternalChargesAmount(
+                    command, paymentDetail, ChargeTimeType.DEPOSIT_FEE);
             if (amountForDeposit.isGreaterThanZero()) {
                 this.savingsAccountDomainService.handleDeposit(account, fmt, account.getActivationLocalDate(),
-                        amountForDeposit.getAmount(), null, isAccountTransfer, applyDepositFee);
+                        amountForDeposit.getAmount(), null, isAccountTransfer, applyDepositFee, linkedCharges);
 
                 updateExistingTransactionsDetails(account, existingTransactionIds, existingReversedTransactionIds);
             }
@@ -201,10 +210,14 @@ public class SavingsAccountWritePlatformServiceJpaRepositoryImpl implements Savi
 
         final Map<String, Object> changes = new LinkedHashMap<String, Object>();
         final PaymentDetail paymentDetail = this.paymentDetailWritePlatformService.createAndPersistPaymentDetail(command, changes);
+        
+        final Set<SavingsAccountCharge> linkedCharges = this.savingsAccountChargeAssembler.fromLinkedChargesAndExternalChargesAmount(
+                command, paymentDetail, ChargeTimeType.DEPOSIT_FEE);
+
         boolean isAccountTransfer = false;
         final boolean applyDepositFee = true;
         final SavingsAccountTransaction deposit = this.savingsAccountDomainService.handleDeposit(account, fmt, transactionDate,
-                transactionAmount, paymentDetail, isAccountTransfer, applyDepositFee);
+                transactionAmount, paymentDetail, isAccountTransfer, applyDepositFee, linkedCharges);
 
         return new CommandProcessingResultBuilder() //
                 .withEntityId(deposit.getId()) //
@@ -235,13 +248,15 @@ public class SavingsAccountWritePlatformServiceJpaRepositoryImpl implements Savi
 
         final Map<String, Object> changes = new LinkedHashMap<String, Object>();
         final PaymentDetail paymentDetail = this.paymentDetailWritePlatformService.createAndPersistPaymentDetail(command, changes);
-
         final SavingsAccount account = this.savingAccountAssembler.assembleFrom(savingsId);
         checkClientOrGroupActive(account);
         boolean isInterestTransfer = false;
         boolean isAccountTransfer = false;
+        // Assemble Charges linked with payment type
+        final Set<SavingsAccountCharge> linkedCharges = this.savingsAccountChargeAssembler.fromLinkedChargesAndExternalChargesAmount(
+                command, paymentDetail, ChargeTimeType.WITHDRAWAL_FEE);
         final SavingsAccountTransaction withdrawal = this.savingsAccountDomainService.handleWithdrawal(account, fmt, transactionDate,
-                transactionAmount, paymentDetail, true, isInterestTransfer, isAccountTransfer);
+                transactionAmount, paymentDetail, true, isInterestTransfer, isAccountTransfer, linkedCharges);
 
         return new CommandProcessingResultBuilder() //
                 .withEntityId(withdrawal.getId()) //

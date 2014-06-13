@@ -6,7 +6,10 @@
 package org.mifosplatform.portfolio.savings.data;
 
 import static org.mifosplatform.portfolio.savings.SavingsApiConstants.activatedOnDateParamName;
+import static org.mifosplatform.portfolio.savings.SavingsApiConstants.amountParamName;
 import static org.mifosplatform.portfolio.savings.SavingsApiConstants.bankNumberParamName;
+import static org.mifosplatform.portfolio.savings.SavingsApiConstants.chargeIdParamName;
+import static org.mifosplatform.portfolio.savings.SavingsApiConstants.chargesParamName;
 import static org.mifosplatform.portfolio.savings.SavingsApiConstants.checkNumberParamName;
 import static org.mifosplatform.portfolio.savings.SavingsApiConstants.closedOnDateParamName;
 import static org.mifosplatform.portfolio.savings.SavingsApiConstants.paymentTypeIdParamName;
@@ -22,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -33,21 +37,30 @@ import org.mifosplatform.infrastructure.core.data.DataValidatorBuilder;
 import org.mifosplatform.infrastructure.core.exception.InvalidJsonException;
 import org.mifosplatform.infrastructure.core.exception.PlatformApiDataValidationException;
 import org.mifosplatform.infrastructure.core.serialization.FromJsonHelper;
+import org.mifosplatform.portfolio.charge.data.PaymentTypeChargeDataValidator;
+import org.mifosplatform.portfolio.paymentdetail.data.PaymentDetailDataValidator;
 import org.mifosplatform.portfolio.savings.SavingsApiConstants;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
 
 @Component
 public class SavingsAccountTransactionDataValidator {
 
     private final FromJsonHelper fromApiJsonHelper;
+    private final PaymentDetailDataValidator paymentDetailDataValidator;
+    private final PaymentTypeChargeDataValidator paymentTypeChargeDataValidator;
 
     @Autowired
-    public SavingsAccountTransactionDataValidator(final FromJsonHelper fromApiJsonHelper) {
+    public SavingsAccountTransactionDataValidator(final FromJsonHelper fromApiJsonHelper,
+            final PaymentDetailDataValidator paymentDetailDataValidator, final PaymentTypeChargeDataValidator paymentTypeChargeDataValidator) {
         this.fromApiJsonHelper = fromApiJsonHelper;
+        this.paymentDetailDataValidator = paymentDetailDataValidator;
+        this.paymentTypeChargeDataValidator = paymentTypeChargeDataValidator;
     }
 
     public void validate(final JsonCommand command) {
@@ -72,19 +85,14 @@ public class SavingsAccountTransactionDataValidator {
         final BigDecimal transactionAmount = this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed(transactionAmountParamName, element);
         baseDataValidator.reset().parameter(transactionAmountParamName).value(transactionAmount).notNull().positiveAmount();
 
-        // Validate all string payment detail fields for max length
-        final Integer paymentTypeId = this.fromApiJsonHelper.extractIntegerWithLocaleNamed(paymentTypeIdParamName, element);
-        baseDataValidator.reset().parameter(paymentTypeIdParamName).value(paymentTypeId).ignoreIfNull().integerGreaterThanZero();
-        final Set<String> paymentDetailParameters = new HashSet<String>(Arrays.asList(transactionAccountNumberParamName,
-                checkNumberParamName, routingCodeParamName, receiptNumberParamName, bankNumberParamName));
-        for (final String paymentDetailParameterName : paymentDetailParameters) {
-            final String paymentDetailParameterValue = this.fromApiJsonHelper.extractStringNamed(paymentDetailParameterName, element);
-            baseDataValidator.reset().parameter(paymentDetailParameterName).value(paymentDetailParameterValue).ignoreIfNull()
-                    .notExceedingLengthOf(50);
-        }
+        this.paymentDetailDataValidator.validatePaymentDetails(element, baseDataValidator);
+
+        this.paymentTypeChargeDataValidator.validateLinkedChargesExternalChargeAmount(element, baseDataValidator);
 
         throwExceptionIfValidationWarningsExist(dataValidationErrors);
     }
+
+    
 
     public void validateActivation(final JsonCommand command) {
         final String json = command.json();

@@ -7,7 +7,6 @@ package org.mifosplatform.portfolio.savings.domain;
 
 import java.math.BigDecimal;
 import java.math.MathContext;
-import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Map;
@@ -20,14 +19,13 @@ import org.mifosplatform.infrastructure.core.service.DateUtils;
 import org.mifosplatform.organisation.monetary.domain.ApplicationCurrency;
 import org.mifosplatform.organisation.monetary.domain.ApplicationCurrencyRepositoryWrapper;
 import org.mifosplatform.organisation.monetary.domain.MonetaryCurrency;
-import org.mifosplatform.portfolio.charge.domain.ChargeTimeType;
-import org.mifosplatform.portfolio.charge.domain.PaymentTypeCharge;
 import org.mifosplatform.portfolio.charge.domain.PaymentTypeChargeRepository;
 import org.mifosplatform.portfolio.paymentdetail.domain.PaymentDetail;
 import org.mifosplatform.portfolio.savings.data.SavingsAccountTransactionDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
 
 @Service
 public class SavingsAccountDomainServiceJpa implements SavingsAccountDomainService {
@@ -55,7 +53,7 @@ public class SavingsAccountDomainServiceJpa implements SavingsAccountDomainServi
     @Override
     public SavingsAccountTransaction handleWithdrawal(final SavingsAccount account, final DateTimeFormatter fmt,
             final LocalDate transactionDate, final BigDecimal transactionAmount, final PaymentDetail paymentDetail,
-            final boolean applyWithdrawFee, boolean isInterestTransfer, final boolean isAccountTransfer) {
+            final boolean applyWithdrawFee, boolean isInterestTransfer, final boolean isAccountTransfer, final Set<SavingsAccountCharge> linkedCharges) {
 
         final Set<Long> existingTransactionIds = new HashSet<Long>();
         final Set<Long> existingReversedTransactionIds = new HashSet<Long>();
@@ -64,12 +62,8 @@ public class SavingsAccountDomainServiceJpa implements SavingsAccountDomainServi
                 paymentDetail, new Date());
         final SavingsAccountTransaction withdrawal = account.withdraw(transactionDTO, applyWithdrawFee);
 
-        if (paymentDetail != null && paymentDetail.getPaymentType() != null) {
-            // Apply and pay withdrawal charges linked with payment type
-            Collection<PaymentTypeCharge> paymentTypeCharges = this.paymentTypeChargeRepository.findByPaymentTypeIdAndChargeChargeTime(
-                    paymentDetail.getPaymentType().getId(), ChargeTimeType.WITHDRAWAL_FEE.getValue());
-
-            account.addAndPayChargesLinkedWithPaymentType(withdrawal, paymentTypeCharges, transactionAmount);
+        if(!CollectionUtils.isEmpty(linkedCharges)){
+            account.addAndPayLinkedCharges(withdrawal, linkedCharges, transactionAmount);
         }
         
         final MathContext mc = MathContext.DECIMAL64;
@@ -95,7 +89,7 @@ public class SavingsAccountDomainServiceJpa implements SavingsAccountDomainServi
     @Override
     public SavingsAccountTransaction handleDeposit(final SavingsAccount account, final DateTimeFormatter fmt,
             final LocalDate transactionDate, final BigDecimal transactionAmount, final PaymentDetail paymentDetail,
-            final boolean isAccountTransfer, final boolean applyDepositFee) {
+            final boolean isAccountTransfer, final boolean applyDepositFee, final Set<SavingsAccountCharge> linkedCharges) {
 
         boolean isInterestTransfer = false;
         final Set<Long> existingTransactionIds = new HashSet<Long>();
@@ -105,13 +99,10 @@ public class SavingsAccountDomainServiceJpa implements SavingsAccountDomainServi
                 paymentDetail, new Date());
         final SavingsAccountTransaction deposit = account.deposit(transactionDTO, applyDepositFee);
         
-        if (paymentDetail != null && paymentDetail.getPaymentType() != null) {
-            // Apply and pay withdrawal charges linked with payment type
-            Collection<PaymentTypeCharge> paymentTypeCharges = this.paymentTypeChargeRepository.findByPaymentTypeIdAndChargeChargeTime(
-                    paymentDetail.getPaymentType().getId(), ChargeTimeType.DEPOSIT_FEE.getValue());
-
-            account.addAndPayChargesLinkedWithPaymentType(deposit, paymentTypeCharges, transactionAmount);
+        if(!CollectionUtils.isEmpty(linkedCharges)){
+            account.addAndPayLinkedCharges(deposit, linkedCharges, transactionAmount);    
         }
+        
         
         final MathContext mc = MathContext.DECIMAL64;
         if (account.isBeforeLastPostingPeriod(transactionDate)) {

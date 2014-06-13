@@ -458,8 +458,9 @@ public class SavingsApplicationProcessWritePlatformServiceJpaRepositoryImpl impl
             // save account entity before performing deposit transaction, as
             // accountId is required for persist transaction entity.
             this.savingAccountRepository.save(account);
+            final Set<SavingsAccountCharge> linkedCharges = null;
             this.savingsAccountDomainService.handleDeposit(account, savingsAccountDataDTO.getFmt(), account.getActivationLocalDate(),
-                    amountForDeposit.getAmount(), null, isAccountTransfer, applyDepositFee);
+                    amountForDeposit.getAmount(), null, isAccountTransfer, applyDepositFee, linkedCharges);
         }
         account.processAccountUponActivation();
         account.validateAccountBalanceDoesNotBecomeNegative(SavingsAccountTransactionType.PAY_CHARGE.name());

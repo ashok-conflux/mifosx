@@ -6,6 +6,7 @@
 package org.mifosplatform.portfolio.savings.domain;
 
 import java.math.BigDecimal;
+import java.util.Set;
 
 import org.joda.time.LocalDate;
 import org.joda.time.format.DateTimeFormatter;
@@ -14,8 +15,10 @@ import org.mifosplatform.portfolio.paymentdetail.domain.PaymentDetail;
 public interface SavingsAccountDomainService {
 
     SavingsAccountTransaction handleWithdrawal(SavingsAccount account, DateTimeFormatter fmt, LocalDate transactionDate,
-            BigDecimal transactionAmount, PaymentDetail paymentDetail, boolean applyWithdrawFee, boolean isInterestTransfer, boolean isAccountTransfer);
+            BigDecimal transactionAmount, PaymentDetail paymentDetail, boolean applyWithdrawFee, boolean isInterestTransfer,
+            boolean isAccountTransfer, final Set<SavingsAccountCharge> linkedCharges);
 
     SavingsAccountTransaction handleDeposit(SavingsAccount account, DateTimeFormatter fmt, LocalDate transactionDate,
-            BigDecimal transactionAmount, PaymentDetail paymentDetail, boolean isAccountTransfer, boolean applyDepositFee);
+            BigDecimal transactionAmount, PaymentDetail paymentDetail, boolean isAccountTransfer, boolean applyDepositFee,
+            final Set<SavingsAccountCharge> linkedCharges);
 }

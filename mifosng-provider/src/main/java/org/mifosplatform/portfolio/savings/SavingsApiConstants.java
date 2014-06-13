@@ -132,7 +132,7 @@ public class SavingsApiConstants {
     public static final String transactions = "transactions";
     public static final String charges = "charges";
     public static final String linkedAccount = "linkedAccount";
-
+    
     public static final Set<String> SAVINGS_PRODUCT_REQUEST_DATA_PARAMETERS = new HashSet<String>(Arrays.asList(localeParamName,
             monthDayFormatParamName, nameParamName, shortNameParamName, descriptionParamName, currencyCodeParamName,
             digitsAfterDecimalParamName, inMultiplesOfParamName, nominalAnnualInterestRateParamName,
@@ -195,7 +195,7 @@ public class SavingsApiConstants {
 
     public static final Set<String> SAVINGS_ACCOUNT_TRANSACTION_REQUEST_DATA_PARAMETERS = new HashSet<String>(Arrays.asList(
             localeParamName, dateFormatParamName, transactionDateParamName, transactionAmountParamName, paymentTypeIdParamName,
-            transactionAccountNumberParamName, checkNumberParamName, routingCodeParamName, receiptNumberParamName, bankNumberParamName));
+            transactionAccountNumberParamName, checkNumberParamName, routingCodeParamName, receiptNumberParamName, bankNumberParamName, chargesParamName));
 
     public static final Set<String> SAVINGS_TRANSACTION_RESPONSE_DATA_PARAMETERS = new HashSet<String>(Arrays.asList(idParamName,
             "accountId", accountNoParamName, "currency", "amount", dateParamName, paymentDetailDataParamName, runningBalanceParamName,

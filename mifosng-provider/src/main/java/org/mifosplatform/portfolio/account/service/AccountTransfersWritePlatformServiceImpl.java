@@ -13,8 +13,11 @@ import static org.mifosplatform.portfolio.account.api.AccountTransfersApiConstan
 import static org.mifosplatform.portfolio.account.api.AccountTransfersApiConstants.transferDateParamName;
 
 import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 
 import org.joda.time.LocalDate;
 import org.joda.time.format.DateTimeFormat;
@@ -32,14 +35,18 @@ import org.mifosplatform.portfolio.account.domain.AccountTransferDetails;
 import org.mifosplatform.portfolio.account.domain.AccountTransferRepository;
 import org.mifosplatform.portfolio.account.domain.AccountTransferTransaction;
 import org.mifosplatform.portfolio.account.domain.AccountTransferType;
+import org.mifosplatform.portfolio.charge.domain.ChargeTimeType;
 import org.mifosplatform.portfolio.loanaccount.domain.Loan;
 import org.mifosplatform.portfolio.loanaccount.domain.LoanAccountDomainService;
 import org.mifosplatform.portfolio.loanaccount.domain.LoanTransaction;
 import org.mifosplatform.portfolio.loanaccount.domain.LoanTransactionType;
 import org.mifosplatform.portfolio.loanaccount.service.LoanAssembler;
 import org.mifosplatform.portfolio.paymentdetail.domain.PaymentDetail;
+import org.mifosplatform.portfolio.paymentdetail.service.PaymentDetailWritePlatformService;
 import org.mifosplatform.portfolio.savings.domain.SavingsAccount;
 import org.mifosplatform.portfolio.savings.domain.SavingsAccountAssembler;
+import org.mifosplatform.portfolio.savings.domain.SavingsAccountCharge;
+import org.mifosplatform.portfolio.savings.domain.SavingsAccountChargeAssembler;
 import org.mifosplatform.portfolio.savings.domain.SavingsAccountDomainService;
 import org.mifosplatform.portfolio.savings.domain.SavingsAccountTransaction;
 import org.mifosplatform.portfolio.savings.service.SavingsAccountWritePlatformService;
@@ -59,6 +66,8 @@ public class AccountTransfersWritePlatformServiceImpl implements AccountTransfer
     private final LoanAccountDomainService loanAccountDomainService;
     private final SavingsAccountWritePlatformService savingsAccountWritePlatformService;
     private final AccountTransferDetailRepository accountTransferDetailRepository;
+    private final PaymentDetailWritePlatformService paymentDetailWritePlatformService;
+    private final SavingsAccountChargeAssembler savingsAccountChargeAssembler;
 
     @Autowired
     public AccountTransfersWritePlatformServiceImpl(final AccountTransfersDataValidator accountTransfersDataValidator,
@@ -66,7 +75,8 @@ public class AccountTransfersWritePlatformServiceImpl implements AccountTransfer
             final SavingsAccountAssembler savingsAccountAssembler, final SavingsAccountDomainService savingsAccountDomainService,
             final LoanAssembler loanAssembler, final LoanAccountDomainService loanAccountDomainService,
             final SavingsAccountWritePlatformService savingsAccountWritePlatformService,
-            final AccountTransferDetailRepository accountTransferDetailRepository) {
+            final AccountTransferDetailRepository accountTransferDetailRepository,
+            final PaymentDetailWritePlatformService paymentDetailWritePlatformService, final SavingsAccountChargeAssembler savingsAccountChargeAssembler) {
         this.accountTransfersDataValidator = accountTransfersDataValidator;
         this.accountTransferAssembler = accountTransferAssembler;
         this.accountTransferRepository = accountTransferRepository;
@@ -76,6 +86,8 @@ public class AccountTransfersWritePlatformServiceImpl implements AccountTransfer
         this.loanAccountDomainService = loanAccountDomainService;
         this.savingsAccountWritePlatformService = savingsAccountWritePlatformService;
         this.accountTransferDetailRepository = accountTransferDetailRepository;
+        this.paymentDetailWritePlatformService = paymentDetailWritePlatformService;
+        this.savingsAccountChargeAssembler = savingsAccountChargeAssembler;
     }
 
     @Transactional
@@ -96,7 +108,8 @@ public class AccountTransfersWritePlatformServiceImpl implements AccountTransfer
         final Integer toAccountTypeId = command.integerValueSansLocaleOfParameterNamed(toAccountTypeParamName);
         final PortfolioAccountType toAccountType = PortfolioAccountType.fromInt(toAccountTypeId);
 
-        final PaymentDetail paymentDetail = null;
+        final Map<String, Object> changes = new HashMap<String, Object>();
+        final PaymentDetail paymentDetail = this.paymentDetailWritePlatformService.createAndPersistPaymentDetail(command, changes);
         Long fromSavingsAccountId = null;
         Long transferDetailId = null;
         boolean isInterestTransfer = false;
@@ -108,17 +121,22 @@ public class AccountTransfersWritePlatformServiceImpl implements AccountTransfer
             final SavingsAccount fromSavingsAccount = this.savingsAccountAssembler.assembleFrom(fromSavingsAccountId);
             validateAccountForTransfer(fromSavingsAccount);
 
+         // 
+            final Set<SavingsAccountCharge> withdrawalLinkedCharges = this.savingsAccountChargeAssembler.fromLinkedChargesAndExternalChargesAmount(
+                    command, paymentDetail, ChargeTimeType.WITHDRAWAL_FEE);
             final SavingsAccountTransaction withdrawal = this.savingsAccountDomainService.handleWithdrawal(fromSavingsAccount, fmt,
                     transactionDate, transactionAmount, paymentDetail, fromSavingsAccount.isWithdrawalFeeApplicableForTransfer(),
-                    isInterestTransfer, isAccountTransfer);
+                    isInterestTransfer, isAccountTransfer, withdrawalLinkedCharges);
 
             final Long toSavingsId = command.longValueOfParameterNamed(toAccountIdParamName);
             final SavingsAccount toSavingsAccount = this.savingsAccountAssembler.assembleFrom(toSavingsId);
             validateAccountForTransfer(toSavingsAccount);
 
+            final Set<SavingsAccountCharge> depositLinkedCharges = this.savingsAccountChargeAssembler.fromLinkedChargesAndExternalChargesAmount(
+                    command, paymentDetail, ChargeTimeType.DEPOSIT_FEE);
             final boolean applyDepositFee = fromSavingsAccount.isDepositFeeApplicableForTransfer();
             final SavingsAccountTransaction deposit = this.savingsAccountDomainService.handleDeposit(toSavingsAccount, fmt,
-                    transactionDate, transactionAmount, paymentDetail, isAccountTransfer, applyDepositFee);
+                    transactionDate, transactionAmount, paymentDetail, isAccountTransfer, applyDepositFee, depositLinkedCharges);
 
             final AccountTransferDetails accountTransferDetails = this.accountTransferAssembler.assembleSavingsToSavingsTransfer(command,
                     fromSavingsAccount, toSavingsAccount, withdrawal, deposit);
@@ -130,10 +148,13 @@ public class AccountTransfersWritePlatformServiceImpl implements AccountTransfer
             fromSavingsAccountId = command.longValueOfParameterNamed(fromAccountIdParamName);
             final SavingsAccount fromSavingsAccount = this.savingsAccountAssembler.assembleFrom(fromSavingsAccountId);
             validateAccountForTransfer(fromSavingsAccount);
-
+            
+            final Set<SavingsAccountCharge> withdrawalLinkedCharges = this.savingsAccountChargeAssembler.fromLinkedChargesAndExternalChargesAmount(
+                    command, paymentDetail, ChargeTimeType.WITHDRAWAL_FEE);
+            
             final SavingsAccountTransaction withdrawal = this.savingsAccountDomainService.handleWithdrawal(fromSavingsAccount, fmt,
                     transactionDate, transactionAmount, paymentDetail, fromSavingsAccount.isWithdrawalFeeApplicableForTransfer(),
-                    isInterestTransfer, isAccountTransfer);
+                    isInterestTransfer, isAccountTransfer, withdrawalLinkedCharges);
 
             final Long toLoanAccountId = command.longValueOfParameterNamed(toAccountIdParamName);
             final Loan toLoanAccount = this.loanAccountAssembler.assembleFrom(toLoanAccountId);
@@ -162,9 +183,12 @@ public class AccountTransfersWritePlatformServiceImpl implements AccountTransfer
             final SavingsAccount toSavingsAccount = this.savingsAccountAssembler.assembleFrom(toSavingsAccountId);
             validateAccountForTransfer(toSavingsAccount);
 
+            final Set<SavingsAccountCharge> linkedCharges = this.savingsAccountChargeAssembler.fromLinkedChargesAndExternalChargesAmount(
+                    command, paymentDetail, ChargeTimeType.DEPOSIT_FEE);
+            
             final boolean applyDepositFee = toSavingsAccount.isDepositFeeApplicableForTransfer();
             final SavingsAccountTransaction deposit = this.savingsAccountDomainService.handleDeposit(toSavingsAccount, fmt,
-                    transactionDate, transactionAmount, paymentDetail, isAccountTransfer, applyDepositFee);
+                    transactionDate, transactionAmount, paymentDetail, isAccountTransfer, applyDepositFee, linkedCharges);
 
             final AccountTransferDetails accountTransferDetails = this.accountTransferAssembler.assembleLoanToSavingsTransfer(command,
                     fromLoanAccount, toSavingsAccount, deposit, loanRefundTransaction);
@@ -255,11 +279,11 @@ public class AccountTransfersWritePlatformServiceImpl implements AccountTransfer
                 toLoanAccount = accountTransferDetails.toLoanAccount();
                 this.loanAccountAssembler.setHelpers(toLoanAccount);
             }
-
+            final Set<SavingsAccountCharge> linkedCharges = null;
             final SavingsAccountTransaction withdrawal = this.savingsAccountDomainService.handleWithdrawal(fromSavingsAccount,
                     accountTransferDTO.getFmt(), accountTransferDTO.getTransactionDate(), accountTransferDTO.getTransactionAmount(),
                     accountTransferDTO.getPaymentDetail(), fromSavingsAccount.isWithdrawalFeeApplicableForTransfer(), AccountTransferType
-                            .fromInt(accountTransferDTO.getTransferType()).isInterestTransfer(), isAccountTransfer);
+                            .fromInt(accountTransferDTO.getTransferType()).isInterestTransfer(), isAccountTransfer, linkedCharges);
 
             LoanTransaction loanTransaction = null;
 
@@ -301,17 +325,18 @@ public class AccountTransfersWritePlatformServiceImpl implements AccountTransfer
                 toSavingsAccount = accountTransferDetails.toSavingsAccount();
                 this.savingsAccountAssembler.setHelpers(toSavingsAccount);
             }
-            
+
+            final Set<SavingsAccountCharge> linkedCharges = null;
             final SavingsAccountTransaction withdrawal = this.savingsAccountDomainService.handleWithdrawal(fromSavingsAccount,
                     accountTransferDTO.getFmt(), accountTransferDTO.getTransactionDate(), accountTransferDTO.getTransactionAmount(),
                     accountTransferDTO.getPaymentDetail(), fromSavingsAccount.isWithdrawalFeeApplicableForTransfer(), AccountTransferType
-                            .fromInt(accountTransferDTO.getTransferType()).isInterestTransfer(), isAccountTransfer);
+                            .fromInt(accountTransferDTO.getTransferType()).isInterestTransfer(), isAccountTransfer, linkedCharges);
 
             final boolean applyDepositFee = toSavingsAccount.isDepositFeeApplicableForTransfer();
 
             final SavingsAccountTransaction deposit = this.savingsAccountDomainService.handleDeposit(toSavingsAccount,
                     accountTransferDTO.getFmt(), accountTransferDTO.getTransactionDate(), accountTransferDTO.getTransactionAmount(),
-                    accountTransferDTO.getPaymentDetail(), isAccountTransfer, applyDepositFee);
+                    accountTransferDTO.getPaymentDetail(), isAccountTransfer, applyDepositFee, linkedCharges);
 
             accountTransferDetails = this.accountTransferAssembler.assembleSavingsToSavingsTransfer(accountTransferDTO, fromSavingsAccount,
                     toSavingsAccount, withdrawal, deposit);
@@ -347,10 +372,11 @@ public class AccountTransfersWritePlatformServiceImpl implements AccountTransfer
                         accountTransferDTO.getTxnExternalId());
             }
 
+            final Set<SavingsAccountCharge> linkedCharges = null;
             final boolean applyDepositFee = toSavingsAccount.isDepositFeeApplicableForTransfer();
             final SavingsAccountTransaction deposit = this.savingsAccountDomainService.handleDeposit(toSavingsAccount,
                     accountTransferDTO.getFmt(), accountTransferDTO.getTransactionDate(), accountTransferDTO.getTransactionAmount(),
-                    accountTransferDTO.getPaymentDetail(), isAccountTransfer, applyDepositFee);
+                    accountTransferDTO.getPaymentDetail(), isAccountTransfer, applyDepositFee, linkedCharges);
 
             accountTransferDetails = this.accountTransferAssembler.assembleLoanToSavingsTransfer(accountTransferDTO, fromLoanAccount,
                     toSavingsAccount, deposit, loanTransaction);

@@ -11,6 +11,7 @@ import java.util.Set;
 
 import org.mifosplatform.portfolio.account.AccountDetailConstants;
 import org.mifosplatform.portfolio.account.data.AccountTransferData;
+import org.mifosplatform.portfolio.savings.SavingsApiConstants;
 
 public class AccountTransfersApiConstants {
 
@@ -26,7 +27,10 @@ public class AccountTransfersApiConstants {
             AccountDetailConstants.fromClientIdParamName, AccountDetailConstants.fromAccountTypeParamName,
             AccountDetailConstants.fromAccountIdParamName, AccountDetailConstants.toOfficeIdParamName,
             AccountDetailConstants.toClientIdParamName, AccountDetailConstants.toAccountTypeParamName,
-            AccountDetailConstants.toAccountIdParamName, transferDateParamName, transferAmountParamName, transferDescriptionParamName));
+            AccountDetailConstants.toAccountIdParamName, transferDateParamName, transferAmountParamName, transferDescriptionParamName,
+            SavingsApiConstants.paymentTypeIdParamName, SavingsApiConstants.transactionAccountNumberParamName,
+            SavingsApiConstants.checkNumberParamName, SavingsApiConstants.routingCodeParamName, SavingsApiConstants.receiptNumberParamName,
+            SavingsApiConstants.bankNumberParamName, SavingsApiConstants.chargesParamName));
 
     /**
      * These parameters will match the class level parameters of
